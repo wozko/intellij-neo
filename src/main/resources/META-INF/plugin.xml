@@ -1,19 +1,6 @@
 <idea-plugin>
-    <id>com.github.irshadnilam.intellijneo</id>
-    <name>intellij-neo</name>
-    <vendor>irshadnilam</vendor>
-
-    <!-- Product and plugin compatibility requirements -->
-    <!-- https://plugins.jetbrains.com/docs/intellij/plugin-compatibility.html -->
+    <id>org.neodapps.plugin</id>
+    <name>NeoIdea</name>
+    <vendor>neodapps.org</vendor>
     <depends>com.intellij.modules.platform</depends>
-
-    <extensions defaultExtensionNs="com.intellij">
-        <applicationService serviceImplementation="com.github.irshadnilam.intellijneo.services.MyApplicationService"/>
-        <projectService serviceImplementation="com.github.irshadnilam.intellijneo.services.MyProjectService"/>
-    </extensions>
-
-    <applicationListeners>
-        <listener class="com.github.irshadnilam.intellijneo.listeners.MyProjectManagerListener"
-                  topic="com.intellij.openapi.project.ProjectManagerListener"/>
-    </applicationListeners>
 </idea-plugin>
