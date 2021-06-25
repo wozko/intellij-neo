@@ -18,5 +18,11 @@
         <toolWindow id="Neo" secondary="false" anchor="right" icon="NeoIcons.Neo_13"
                     factoryClass="org.neodapps.plugin.toolwindow.NeoToolWindowFactory"/>
         <!--   Tool Window     -->
+
+        <!-- Service that runs neo-express commands       -->
+        <projectService
+                serviceImplementation="org.neodapps.plugin.neoexpress.service.NeoExpressService"/>
+        <!-- Service that runs neo-express commands       -->
+
     </extensions>
 </idea-plugin>
