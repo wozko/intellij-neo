@@ -6,6 +6,7 @@ plugins {
     id("java")
     id("org.jetbrains.intellij") version "1.0"
     id("org.jetbrains.changelog") version "1.1.2"
+    id("checkstyle")
 }
 
 group = properties("pluginGroup")
@@ -36,6 +37,10 @@ intellij {
 changelog {
     version = properties("pluginVersion")
     groups = emptyList()
+}
+
+checkstyle {
+    toolVersion = "8.43"
 }
 
 tasks {
@@ -77,5 +82,14 @@ tasks {
         // Specify pre-release label to publish the plugin in a custom Release Channel automatically. Read more:
         // https://plugins.jetbrains.com/docs/intellij/deployment.html#specifying-a-release-channel
         channels.set(listOf(properties("pluginVersion").split('-').getOrElse(1) { "default" }.split('.').first()))
+    }
+
+    runIde {
+        dependsOn("checkstyleMain")
+    }
+
+    checkstyleMain {
+        ignoreFailures = false
+        maxWarnings = 0
     }
 }
