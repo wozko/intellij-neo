@@ -11,5 +11,9 @@
         <applicationService serviceImplementation="org.neodapps.plugin.settings.SettingsState"/>
         <!--  File -> Settings -> Tools -> Neo  -->
 
+        <!--   Notifications     -->
+        <notificationGroup id="org.neodapps.plugin" displayType="BALLOON" icon="NeoIcons.Neo_16"/>
+        <!--   Notifications     -->
+
     </extensions>
 </idea-plugin>
