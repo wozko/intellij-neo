@@ -1,6 +1,6 @@
-package org.jetbrains.plugins.template.services
+package com.github.irshadnilam.intellijneo.services
 
-import org.jetbrains.plugins.template.MyBundle
+import com.github.irshadnilam.intellijneo.MyBundle
 
 class MyApplicationService {
 
