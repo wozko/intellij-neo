@@ -4,25 +4,24 @@
     <vendor>neodapps.org</vendor>
     <depends>com.intellij.modules.platform</depends>
     <extensions defaultExtensionNs="com.intellij">
+
         <!--  File -> Settings -> Tools -> Neo  -->
         <applicationConfigurable parentId="tools" instance="org.neodapps.plugin.settings.SettingsConfigurable"
                                  id="org.neodapps.plugin.settings.SettingsConfigurable" displayName="Neo"/>
         <applicationService serviceImplementation="org.neodapps.plugin.settings.SettingsState"/>
-        <!--  File -> Settings -> Tools -> Neo  -->
 
         <!--   Notifications     -->
         <notificationGroup id="org.neodapps.plugin" displayType="BALLOON" icon="NeoIcons.Neo_16"/>
-        <!--   Notifications     -->
 
         <!--   Tool Window     -->
         <toolWindow id="Neo" secondary="false" anchor="right" icon="NeoIcons.Neo_13"
                     factoryClass="org.neodapps.plugin.toolwindow.NeoToolWindowFactory"/>
-        <!--   Tool Window     -->
 
-        <!-- Service that runs neo-express commands       -->
-        <projectService
-                serviceImplementation="org.neodapps.plugin.neoexpress.service.NeoExpressService"/>
-        <!-- Service that runs neo-express commands       -->
+        <!-- Service that runs neo-express commands -->
+        <projectService serviceImplementation="org.neodapps.plugin.neoexpress.service.NeoExpressService"/>
+
+        <!-- Service that keep tracks of chains in the project -->
+        <projectService serviceImplementation="org.neodapps.plugin.toolwindow.ChainListService"/>
 
     </extensions>
 </idea-plugin>
