@@ -3,4 +3,13 @@
     <name>NeoIdea</name>
     <vendor>neodapps.org</vendor>
     <depends>com.intellij.modules.platform</depends>
+    <extensions defaultExtensionNs="com.intellij">
+
+        <!--  File -> Settings -> Tools -> Neo  -->
+        <applicationConfigurable parentId="tools" instance="org.neodapps.plugin.settings.SettingsConfigurable"
+                                 id="org.neodapps.plugin.settings.SettingsConfigurable" displayName="Neo"/>
+        <applicationService serviceImplementation="org.neodapps.plugin.settings.SettingsState"/>
+        <!--  File -> Settings -> Tools -> Neo  -->
+
+    </extensions>
 </idea-plugin>
