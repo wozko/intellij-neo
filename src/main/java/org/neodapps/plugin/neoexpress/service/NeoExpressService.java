@@ -6,17 +6,20 @@
 package org.neodapps.plugin.neoexpress.service;
 
 import com.intellij.openapi.project.Project;
-import java.io.File;
 import java.io.IOException;
-import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-import org.apache.commons.io.IOUtils;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import org.neodapps.plugin.MessageBundle;
 import org.neodapps.plugin.Notifier;
-import org.neodapps.plugin.neoexpress.model.ExpressCommands;
+import org.neodapps.plugin.neoexpress.model.ExpressCommand;
+import org.neodapps.plugin.neoexpress.model.ExpressCommandNotifier;
 import org.neodapps.plugin.settings.SettingsState;
+import org.neodapps.plugin.toolwindow.topics.NodeListNotifier;
 
 /**
  * Neo express task runner.
@@ -24,9 +27,24 @@ import org.neodapps.plugin.settings.SettingsState;
 public final class NeoExpressService {
 
   private final Project neoProject;
+  private final String neoExecutable;
 
+  /**
+   * Runs express commands.
+   *
+   * @param project Working project
+   */
   public NeoExpressService(Project project) {
     neoProject = project;
+
+    // set neo-express executable path
+    var settings = SettingsState.getInstance();
+    var specifiedPath = settings.neoExpressLocation;
+    if (specifiedPath.isEmpty()) {
+      this.neoExecutable = "neoxp";
+    } else {
+      this.neoExecutable = specifiedPath;
+    }
   }
 
   /**
@@ -40,63 +58,83 @@ public final class NeoExpressService {
     if (numberOfNodes != 1 && numberOfNodes != 4 && numberOfNodes != 7) {
       numberOfNodes = 1;
     }
-    var commandResult =
-        runCommand(ExpressCommands.CREATE, Arrays.asList("-c", String.valueOf(numberOfNodes),
-            "-a", String.valueOf(addressVersion), "-f", name));
-    if (commandResult != null) {
-      Notifier.notifySuccess(neoProject, String.format("\"%s\" private net created.", name));
-    }
+
+    runCommand(ExpressCommand.CREATE, Arrays.asList("-c", String.valueOf(numberOfNodes),
+        "-a", String.valueOf(addressVersion), "-f", name),
+        MessageBundle.message("terminal.tab.name", ExpressCommand.CREATE, "")
+    );
+
+    var bus = neoProject.getMessageBus();
+    // subscribe to command
+    bus.connect().subscribe(ExpressCommandNotifier.CREATE_COMMAND, (command) -> {
+
+      // wait a second for newly created .neo-express file to index
+      // without this the refresh is not including the newly created file
+      // TODO: look for a better approach
+      try {
+        TimeUnit.SECONDS.sleep(1);
+      } catch (InterruptedException e) {
+        e.printStackTrace();
+      }
+
+      // send an event to refresh the ui
+      var publisher = bus.syncPublisher(NodeListNotifier.CHAIN_ADDED);
+      publisher.afterAction();
+
+      Notifier.notifySuccess(neoProject,
+          MessageBundle.message("notifications.private.net.created", name));
+
+    });
   }
 
   /**
    * Runs a neo-express command.
    *
-   * @param command command to run
-   * @param options command options
-   * @return output of command
+   * @param expressCommand command to run
+   * @param options        command options
    */
-  public String runCommand(ExpressCommands command, List<String> options) {
-    var settings = SettingsState.getInstance();
-
-
-    if (settings.dotNetRoot.isEmpty()) {
-      Notifier.notifyError(neoProject, "DOTNET_ROOT path is not set (Settings > Tools > Neo). ");
-      return null;
+  public void runCommand(ExpressCommand expressCommand, List<String> options, String tabName) {
+    // get the terminal window
+    var shell = new ShellTerminalRunner(neoProject);
+    if (!shell.isAvailable(neoProject)) {
+      Notifier.notifyError(neoProject, MessageBundle.message("terminal.window.not.available"));
+      return;
     }
 
-    if (settings.neoExpressLocation.isEmpty()) {
-      Notifier.notifyError(neoProject,
-          "Neo-express executable path is not set (Settings > Tools > Neo) ");
-      return null;
+    // run command from base path
+    var command = createCommand(expressCommand, options);
+    try {
+      shell.run(command, Objects.requireNonNull(neoProject.getBasePath()), tabName);
+    } catch (IOException e) {
+      Notifier.notifyError(neoProject, e.getMessage());
     }
 
+    var bus = neoProject.getMessageBus();
+    // wait for command to run
+    ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+    var future = executor.scheduleAtFixedRate(() -> {
+      if (!shell.isProcessRunning()) {
+        // publish an event when command is no longer running
+        var publisher = bus.syncPublisher(ExpressCommandNotifier.ANY_COMMAND);
+        publisher.afterCompletion(expressCommand);
+      }
+    }, 0, 500, TimeUnit.MILLISECONDS);
+
+    // cancel the scheduler and publish command completion event
+    neoProject.getMessageBus().connect().subscribe(ExpressCommandNotifier.ANY_COMMAND,
+        (completedExpressCommand) -> {
+          future.cancel(false);
+
+          var publisher = bus.syncPublisher(completedExpressCommand.getTopic());
+          publisher.afterCompletion(completedExpressCommand);
+        });
+  }
+
+  private String createCommand(ExpressCommand command, List<String> options) {
     List<String> params = new ArrayList<>();
-    params.add(settings.neoExpressLocation);
+    params.add(neoExecutable);
     params.add(command.toString());
     params.addAll(options);
-
-    ProcessBuilder builder = new ProcessBuilder(params);
-    builder.directory(new File(Objects.requireNonNull(neoProject.getBasePath())));
-    builder.environment().put("DOTNET_ROOT", settings.dotNetRoot);
-
-    String stdout;
-    String stder;
-    try {
-      Process p = builder.start();
-      stdout = IOUtils.toString(p.getInputStream(), Charset.defaultCharset());
-      stder = IOUtils.toString(p.getErrorStream(), Charset.defaultCharset());
-    } catch (IOException e) {
-      Notifier.notifyError(neoProject, e.getMessage() + "\n\n"
-          + "Make sure neo-express is configured properly (Settings > Tools > Neo)");
-      return null;
-    }
-
-    if (!stder.isEmpty()) {
-      Notifier.notifyError(neoProject,
-          stder + "\n\n" + "Make sure neo-express is configured properly (Settings > Tools > Neo)");
-      return null;
-    }
-
-    return stdout;
+    return String.join(" ", params);
   }
 }

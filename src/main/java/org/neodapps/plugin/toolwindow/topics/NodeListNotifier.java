@@ -10,11 +10,12 @@ import com.intellij.util.messages.Topic;
 /**
  * An event that fires when chain is refreshed.
  */
-public interface RefreshChainsNotifier {
-  Topic<RefreshChainsNotifier> REFRESH_NODE =
-      Topic.create("REFRESH_NODE", RefreshChainsNotifier.class);
+public interface NodeListNotifier {
+  Topic<NodeListNotifier> REFRESH_NODE =
+      Topic.create("REFRESH_NODE", NodeListNotifier.class);
 
-  void beforeAction();
+  Topic<NodeListNotifier> CHAIN_ADDED =
+      Topic.create("CHAIN_ADDED", NodeListNotifier.class);
 
   void afterAction();
 }

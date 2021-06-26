@@ -25,6 +25,7 @@ import java.awt.BorderLayout;
 import java.awt.Cursor;
 import java.awt.FlowLayout;
 import java.awt.event.ActionListener;
+import java.awt.event.ItemEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.List;
@@ -37,8 +38,9 @@ import org.neodapps.plugin.MessageBundle;
 import org.neodapps.plugin.blockchain.ChainLike;
 import org.neodapps.plugin.blockchain.ConsensusNodeLike;
 import org.neodapps.plugin.blockchain.NodeRunningState;
+import org.neodapps.plugin.toolwindow.popups.CreatePrivateNetPopup;
 import org.neodapps.plugin.toolwindow.topics.NodeChangeNotifier;
-import org.neodapps.plugin.toolwindow.topics.RefreshChainsNotifier;
+import org.neodapps.plugin.toolwindow.topics.NodeListNotifier;
 
 /**
  * Represents the content shown in tool window.
@@ -69,47 +71,40 @@ public class ToolWindowComponent implements Disposable {
     MessageBus bus = project.getMessageBus();
 
     // chain or node change
-    bus.connect().subscribe(NodeChangeNotifier.NODE_CHANGE, new NodeChangeNotifier() {
+    bus.connect().subscribe(NodeChangeNotifier.NODE_CHANGE, (chain, node) -> {
+      // set selected value
+      selected = true;
+      selectedChain = chain;
+      selectedNode = node;
 
-      @Override
-      public void beforeAction() {
-      }
-
-      @Override
-      public void afterAction(ChainLike chain, ConsensusNodeLike node) {
-        // set selected value
-        selected = true;
-        selectedChain = chain;
-        selectedNode = node;
-
-        chainsListWrapper.setContent(getChainListWrapperContent());
-        statusWrapper.setContent(getStatusWrapperContent());
-        mainDataWrapper.setContent(getDataWrapperContent());
-      }
+      chainsListWrapper.setContent(getChainListWrapperContent());
+      statusWrapper.setContent(getStatusWrapperContent());
+      mainDataWrapper.setContent(getDataWrapperContent());
     });
 
-    // a new node created
-    // or refresh event
-    bus.connect().subscribe(RefreshChainsNotifier.REFRESH_NODE, new RefreshChainsNotifier() {
-      @Override
-      public void beforeAction() {
-      }
+    // refresh event
+    bus.connect().subscribe(NodeListNotifier.REFRESH_NODE, () -> {
+      // update chain list
+      chains = project.getService(ChainListService.class).loadChains();
 
-      @Override
-      public void afterAction() {
-        // update chain list
-        chains = project.getService(ChainListService.class).loadChains();
+      // reset selected chains/node
+      selected = false;
+      selectedChain = null;
+      selectedNode = null;
 
-        // reset selected chains/node
-        selected = false;
-        selectedChain = null;
-        selectedNode = null;
+      chainsListWrapper.setContent(getChainListWrapperContent());
+      statusWrapper.setContent(getStatusWrapperContent());
+      mainDataWrapper.setContent(getDataWrapperContent());
 
-        chainsListWrapper.setContent(getChainListWrapperContent());
-        statusWrapper.setContent(getStatusWrapperContent());
-        mainDataWrapper.setContent(getDataWrapperContent());
+    });
 
-      }
+    // a new private net is created
+    bus.connect().subscribe(NodeListNotifier.CHAIN_ADDED, () -> {
+      // update chain list
+      chains = project.getService(ChainListService.class).loadChains();
+
+      // update chain list
+      chainsListWrapper.setContent(getChainListWrapperContent());
     });
   }
 
@@ -186,6 +181,21 @@ public class ToolWindowComponent implements Disposable {
     }
     nodeComboBox.setSelectedItem(selectedNode);
 
+    // change node list on chain change
+    chainComboBox.addItemListener(e -> {
+      if (e.getStateChange() == ItemEvent.SELECTED) {
+        ChainLike selection = (ChainLike) e.getItem();
+
+        nodeComboBox.removeAllItems();
+        for (ConsensusNodeLike node : selection.getNodes()) {
+          nodeComboBox.addItem(node);
+        }
+        // set first node as default
+        nodeComboBox.setSelectedIndex(0);
+
+      }
+    });
+
     chainPickerPanel.setLayout(new FlowLayout(FlowLayout.LEADING));
     chainPickerPanel.add(chainComboBox);
     chainPickerPanel.add(nodeComboBox);
@@ -197,7 +207,6 @@ public class ToolWindowComponent implements Disposable {
           // publish change node event so the ui get updated
           NodeChangeNotifier publisher =
               project.getMessageBus().syncPublisher(NodeChangeNotifier.NODE_CHANGE);
-          publisher.beforeAction();
           publisher.afterAction((ChainLike) chainComboBox.getSelectedItem(),
               (ConsensusNodeLike) nodeComboBox.getSelectedItem());
         });
@@ -216,14 +225,18 @@ public class ToolWindowComponent implements Disposable {
     JButton createPrivateNetButton =
         new ToolWindowButton(MessageBundle.message("toolwindow.create.private.net"),
             AllIcons.General.Add, actionEvent -> {
-          System.out.println("Test");
+          CreatePrivateNetPopup popup = new CreatePrivateNetPopup(project);
+          popup.showPopup();
         });
     buttonPanel.add(createPrivateNetButton);
 
     // refresh icon
     JButton refreshButton = new ToolWindowButton("", AllIcons.Javaee.UpdateRunningApplication,
         actionEvent -> {
-          System.out.println("Test refresh");
+          // publish refresh node event so the ui get updated
+          NodeListNotifier publisher =
+              project.getMessageBus().syncPublisher(NodeListNotifier.REFRESH_NODE);
+          publisher.afterAction();
         });
     buttonPanel.add(refreshButton);
     return buttonPanel;

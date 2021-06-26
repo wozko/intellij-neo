@@ -21,7 +21,5 @@ public interface NodeChangeNotifier {
   Topic<NodeChangeNotifier> NODE_CHANGE =
       Topic.create("NODE_CHANGED", NodeChangeNotifier.class);
 
-  void beforeAction();
-
   void afterAction(ChainLike chain, ConsensusNodeLike node);
 }
