@@ -3,6 +3,7 @@
     <name>NeoIdea</name>
     <vendor>neodapps.org</vendor>
     <depends>com.intellij.modules.platform</depends>
+    <depends>org.jetbrains.plugins.terminal</depends>
     <extensions defaultExtensionNs="com.intellij">
 
         <!--  File -> Settings -> Tools -> Neo  -->
