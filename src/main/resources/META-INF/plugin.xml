@@ -7,22 +7,24 @@
     <extensions defaultExtensionNs="com.intellij">
 
         <!--  File -> Settings -> Tools -> Neo  -->
-        <applicationConfigurable parentId="tools" instance="org.neodapps.plugin.settings.SettingsConfigurable"
-                                 id="org.neodapps.plugin.settings.SettingsConfigurable" displayName="Neo"/>
-        <applicationService serviceImplementation="org.neodapps.plugin.settings.SettingsState"/>
+        <applicationConfigurable parentId="tools" instance="org.neodapps.plugin.NeoSettingsConfigurable"
+                                 id="org.neodapps.plugin.NeoSettingsConfigurable" displayName="Neo"/>
+        <applicationService serviceImplementation="org.neodapps.plugin.persistance.SettingsState"/>
 
         <!--   Notifications     -->
         <notificationGroup id="org.neodapps.plugin" displayType="BALLOON" icon="NeoIcons.Neo_16"/>
 
         <!--   Tool Window     -->
         <toolWindow id="Neo" secondary="false" anchor="right" icon="NeoIcons.Neo_13"
-                    factoryClass="org.neodapps.plugin.toolwindow.NeoToolWindowFactory"/>
+                    factoryClass="org.neodapps.plugin.NeoToolWindowFactory"/>
 
         <!-- Service that runs neo-express commands -->
-        <projectService serviceImplementation="org.neodapps.plugin.neoexpress.service.NeoExpressService"/>
+        <projectService serviceImplementation="org.neodapps.plugin.services.NeoExpressService"/>
 
         <!-- Service that keep tracks of chains in the project -->
-        <projectService serviceImplementation="org.neodapps.plugin.toolwindow.ChainListService"/>
+        <projectService serviceImplementation="org.neodapps.plugin.services.ChainListService"/>
 
+        <!-- Service that does chain utils -->
+        <projectService serviceImplementation="org.neodapps.plugin.services.BlockchainService"/>
     </extensions>
 </idea-plugin>

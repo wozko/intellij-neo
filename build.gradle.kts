@@ -17,6 +17,11 @@ repositories {
     mavenCentral()
 }
 dependencies {
+    implementation("commons-io:commons-io:2.10.0")
+    implementation("com.google.code.gson:gson:2.8.7")
+    implementation("io.neow3j:contract:3.11.2") {
+        exclude("org.slf4j")
+    }
 }
 
 // Configure gradle-intellij-plugin plugin.
@@ -56,15 +61,15 @@ tasks {
 
         // Extract the <!-- Plugin description --> section from README.md and provide for the plugin's manifest
         pluginDescription.set(
-            File(projectDir, "README.md").readText().lines().run {
-                val start = "<!-- Plugin description -->"
-                val end = "<!-- Plugin description end -->"
+                File(projectDir, "README.md").readText().lines().run {
+                    val start = "<!-- Plugin description -->"
+                    val end = "<!-- Plugin description end -->"
 
-                if (!containsAll(listOf(start, end))) {
-                    throw GradleException("Plugin description section not found in README.md:\n$start ... $end")
-                }
-                subList(indexOf(start) + 1, indexOf(end))
-            }.joinToString("\n").run { markdownToHTML(this) }
+                    if (!containsAll(listOf(start, end))) {
+                        throw GradleException("Plugin description section not found in README.md:\n$start ... $end")
+                    }
+                    subList(indexOf(start) + 1, indexOf(end))
+                }.joinToString("\n").run { markdownToHTML(this) }
         )
 
         // Get the latest available change notes from the changelog file
