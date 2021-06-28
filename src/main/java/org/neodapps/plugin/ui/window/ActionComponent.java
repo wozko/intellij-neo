@@ -3,11 +3,6 @@
  *  found in the LICENSE file.
  */
 
-/*
- *  Use of this source code is governed by the Apache 2.0 license that can be
- *  found in the LICENSE file.
- */
-
 package org.neodapps.plugin.ui.window;
 
 import com.intellij.icons.AllIcons;
@@ -46,7 +41,7 @@ public class ActionComponent extends Wrapper {
 
     // create private net button
     JButton createPrivateNetButton =
-        new ToolWindowComponent.ToolWindowButton(
+        new ToolWindowButton(
             NeoMessageBundle.message("toolwindow.create.private.net"),
             AllIcons.General.Add, actionEvent -> {
           CreatePrivateNetPopup popup = new CreatePrivateNetPopup(project);
@@ -56,7 +51,7 @@ public class ActionComponent extends Wrapper {
 
     // refresh icon
     JButton refreshButton =
-        new ToolWindowComponent.ToolWindowButton("", AllIcons.Javaee.UpdateRunningApplication,
+        new ToolWindowButton("", AllIcons.Javaee.UpdateRunningApplication,
             actionEvent -> {
               // clear selection on refresh
               project.getService(ChainListService.class).setSelectedValues(null);

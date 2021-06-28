@@ -3,11 +3,6 @@
  *  found in the LICENSE file.
  */
 
-/*
- *  Use of this source code is governed by the Apache 2.0 license that can be
- *  found in the LICENSE file.
- */
-
 package org.neodapps.plugin.ui.window;
 
 import com.intellij.icons.AllIcons;
@@ -68,7 +63,7 @@ public class NodeStatusComponent extends Wrapper {
     if (selectedValue == null) {
       statusPanel.add(new JBLabel(NeoMessageBundle.message("toolwindow.select.node")));
       var mockButton =
-          new ToolWindowComponent.ToolWindowButton(
+          new ToolWindowButton(
               NeoMessageBundle.message("toolwindow.pick.apply"),
               AllIcons.Actions.BuildLoadChanges, null);
       mockButton.setEnabled(false);
@@ -99,9 +94,9 @@ public class NodeStatusComponent extends Wrapper {
     return statusPanel;
   }
 
-  private ToolWindowComponent.ToolWindowButton getRunActionButton(
+  private ToolWindowButton getRunActionButton(
       PrivateChain value) {
-    return new ToolWindowComponent.ToolWindowButton(
+    return new ToolWindowButton(
         NeoMessageBundle.message("toolwindow.private.net.start"),
         AllIcons.Actions.Execute,
         e -> {
