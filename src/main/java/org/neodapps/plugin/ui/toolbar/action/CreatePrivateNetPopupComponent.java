@@ -21,8 +21,6 @@ import java.util.Objects;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.ListSelectionModel;
-import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
 import org.neodapps.plugin.NeoMessageBundle;
 import org.neodapps.plugin.services.NeoExpressService;
 import org.neodapps.plugin.ui.ToolWindowButton;
@@ -37,7 +35,6 @@ public class CreatePrivateNetPopupComponent implements Disposable {
   private JTextField nameField;
   private ToolWindowButton actionButton;
 
-  private String name;
   private int nodeCount;
 
   public CreatePrivateNetPopupComponent(Project project) {
@@ -49,32 +46,9 @@ public class CreatePrivateNetPopupComponent implements Disposable {
 
     // name field
     nameField = new JTextField(NeoMessageBundle.message("toolwindow.private.net.default.name"));
-    name = nameField.getText();
     builder.addLabeledComponent(
         new JBLabel(NeoMessageBundle.message("toolwindow.private.net.prompt.name")), nameField,
         true);
-
-    nameField.getDocument().addDocumentListener(new DocumentListener() {
-      void updateNameField() {
-        name = nameField.getText();
-      }
-
-      @Override
-      public void insertUpdate(DocumentEvent documentEvent) {
-        updateNameField();
-      }
-
-      @Override
-      public void removeUpdate(DocumentEvent documentEvent) {
-        updateNameField();
-      }
-
-      @Override
-      public void changedUpdate(DocumentEvent documentEvent) {
-        updateNameField();
-      }
-
-    });
 
     // node list
     var nodeList = new JBList<>(Arrays.asList(1, 4, 7));
@@ -95,7 +69,7 @@ public class CreatePrivateNetPopupComponent implements Disposable {
             e -> {
               closePopup();
               project.getService(NeoExpressService.class)
-                  .createPrivateNet(nodeCount, 53, name);
+                  .createPrivateNet(nodeCount, 53, nameField.getText());
             });
 
     builder.addComponent(actionButton);

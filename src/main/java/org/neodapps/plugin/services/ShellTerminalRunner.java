@@ -28,7 +28,6 @@ import org.jetbrains.plugins.terminal.arrangement.TerminalWorkingDirectoryManage
 public class ShellTerminalRunner {
 
   private final Project myProject;
-  private ShellTerminalWidget terminalWidget;
 
   protected ShellTerminalRunner(@NotNull Project project) {
     this.myProject = project;
@@ -80,29 +79,29 @@ public class ShellTerminalRunner {
    * @param workingDirectory directory to run from
    * @param tabName          name of the terminal tab
    */
-  public void run(@NotNull String command, @NotNull String workingDirectory,
-                  @NotNull String tabName) throws IOException {
+  public ShellTerminalWidget run(@NotNull String command, @NotNull String workingDirectory,
+                                 @NotNull String tabName) throws IOException {
     TerminalView terminalView = TerminalView.getInstance(myProject);
     ToolWindow window = ToolWindowManager.getInstance(myProject)
         .getToolWindow(TerminalToolWindowFactory.TOOL_WINDOW_ID);
     if (window == null) {
-      return;
+      return null;
     }
 
     ContentManager contentManager = window.getContentManager();
     Pair<Content, ShellTerminalWidget> pair = getSuitableProcess(contentManager, workingDirectory);
 
     if (pair == null) {
-      terminalWidget = terminalView
+      var terminalWidget = terminalView
           .createLocalShellWidget(workingDirectory, tabName, true);
       terminalWidget.executeCommand(command);
-      return;
+      return terminalWidget;
     }
     window.activate(null);
     contentManager.setSelectedContent(pair.first);
-    terminalWidget = pair.second;
+    var terminalWidget = pair.second;
     terminalWidget.executeCommand(command);
-
+    return terminalWidget;
   }
 
   /**
@@ -115,14 +114,5 @@ public class ShellTerminalRunner {
     ToolWindow window = ToolWindowManager.getInstance(project)
         .getToolWindow(TerminalToolWindowFactory.TOOL_WINDOW_ID);
     return window != null && window.isAvailable();
-  }
-
-  /**
-   * Checks if the shell is running commands.
-   *
-   * @return true if the shell is running a command
-   */
-  public ShellTerminalWidget getTerminalWidget() {
-    return terminalWidget;
   }
 }

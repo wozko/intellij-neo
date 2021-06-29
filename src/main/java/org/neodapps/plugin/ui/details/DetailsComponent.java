@@ -19,6 +19,7 @@ import org.neodapps.plugin.blockchain.ChainLike;
 import org.neodapps.plugin.blockchain.PrivateChain;
 import org.neodapps.plugin.topics.NodeChangeNotifier;
 import org.neodapps.plugin.ui.details.blocks.BlockInfoTable;
+import org.neodapps.plugin.ui.details.wallets.WalletComponent;
 
 /**
  * Represents the component with status and tabs.
@@ -64,7 +65,7 @@ public class DetailsComponent extends Wrapper implements Disposable {
   }
 
   private void addWalletComponent(ChainLike selectedChain) {
-    var wallet = new WalletComponent((PrivateChain) selectedChain);
+    var wallet = new WalletComponent(project, (PrivateChain) selectedChain);
     TabInfo walletTab = new TabInfo(new JBScrollPane(wallet))
         .setText(NeoMessageBundle.message("toolwindow.tabs.wallets"));
     tabs.addTab(walletTab);

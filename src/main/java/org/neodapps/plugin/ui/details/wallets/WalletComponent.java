@@ -3,9 +3,10 @@
  *  found in the LICENSE file.
  */
 
-package org.neodapps.plugin.ui.details;
+package org.neodapps.plugin.ui.details.wallets;
 
 import com.intellij.icons.AllIcons;
+import com.intellij.openapi.project.Project;
 import com.intellij.ui.JBColor;
 import com.intellij.ui.components.JBLabel;
 import com.intellij.ui.components.JBTextField;
@@ -28,43 +29,50 @@ import org.neodapps.plugin.ui.ToolWindowButton;
  */
 public class WalletComponent extends Wrapper {
 
-  final PrivateChain chain;
+  final Project project;
+  final Wrapper walletComponent;
 
-  public WalletComponent(PrivateChain chain) {
-    this.chain = chain;
-    setContent(getContent());
-  }
+  /**
+   * Creates the wallet list component.
+   *
+   * @param project intellij project
+   * @param chain   selected chain
+   */
+  public WalletComponent(Project project, PrivateChain chain) {
+    this.project = project;
+    walletComponent = new Wrapper();
 
-  private JComponent getContent() {
     var panel = JBUI.Panels.simplePanel();
-    panel.addToTop(getToolBar());
-    panel.addToCenter(getWalletListComponent(chain.getConfig()));
-    return panel;
+    panel.addToTop(getToolBar(chain));
+    panel.addToCenter(walletComponent);
+
+    walletComponent.setContent(getWalletListComponent(chain.getConfig()));
+    setContent(panel);
   }
 
-  private JComponent getToolBar() {
+  private JComponent getToolBar(PrivateChain chain) {
     // toolbar has two buttons
     JPanel buttonPanel = JBUI.Panels.simplePanel();
     buttonPanel.setLayout(new FlowLayout());
     buttonPanel.setBorder(JBUI.Borders.customLine(JBColor.border()));
-
 
     // create wallet
     JButton createWalletButton =
         new ToolWindowButton(
             NeoMessageBundle.message("toolwindow.create.wallet"),
             AllIcons.General.Add, actionEvent -> {
-          // todo create
+          var popup = new CreateWalletPopupComponent(project, chain);
+          popup.showPopup();
         });
     buttonPanel.add(createWalletButton);
 
     // refresh wallet balances
     // refresh icon
     JButton refreshButton =
-        new ToolWindowButton(NeoMessageBundle.message("toolwindow.refresh.balances"),
+        new ToolWindowButton("",
             AllIcons.Javaee.UpdateRunningApplication,
             actionEvent -> {
-              // todo
+              walletComponent.setContent(getWalletListComponent(chain.getConfig()));
             });
     buttonPanel.add(refreshButton);
     return buttonPanel;

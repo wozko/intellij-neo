@@ -6,29 +6,16 @@
 package org.neodapps.plugin.topics;
 
 import com.intellij.util.messages.Topic;
-import org.neodapps.plugin.blockchain.express.ExpressCommand;
+import java.util.UUID;
 
 /**
  * Represents topics for express commands.
  */
 public interface ExpressCommandNotifier {
-  Topic<ExpressCommandNotifier> CREATE_COMMAND =
-      Topic.create("CREATE_COMMAND", ExpressCommandNotifier.class);
-  Topic<ExpressCommandNotifier> CONTRACT_COMMAND =
-      Topic.create("CONTRACT_COMMAND", ExpressCommandNotifier.class);
-  Topic<ExpressCommandNotifier> RESET_COMMAND =
-      Topic.create("RESENT_COMMAND", ExpressCommandNotifier.class);
-  Topic<ExpressCommandNotifier> RUN_COMMAND =
-      Topic.create("RUN_COMMAND", ExpressCommandNotifier.class);
-  Topic<ExpressCommandNotifier> SHOW_COMMAND =
-      Topic.create("SHOW_COMMAND", ExpressCommandNotifier.class);
-  Topic<ExpressCommandNotifier> TRANSFER_COMMAND =
-      Topic.create("TRANSFER_COMMAND", ExpressCommandNotifier.class);
-  Topic<ExpressCommandNotifier> WALLET_COMMAND =
-      Topic.create("TRANSFER_COMMAND", ExpressCommandNotifier.class);
-
   Topic<ExpressCommandNotifier> ANY_COMMAND =
       Topic.create("ANY_COMMAND", ExpressCommandNotifier.class);
+  Topic<ExpressCommandNotifier> RUNNER =
+      Topic.create("RUNNER", ExpressCommandNotifier.class);
 
-  void afterCompletion(ExpressCommand command);
+  void afterCompletion(UUID id);
 }

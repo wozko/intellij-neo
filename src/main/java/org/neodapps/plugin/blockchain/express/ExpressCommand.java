@@ -5,35 +5,26 @@
 
 package org.neodapps.plugin.blockchain.express;
 
-import com.intellij.util.messages.Topic;
-import org.neodapps.plugin.topics.ExpressCommandNotifier;
-
 /**
  * Represents different neo-express commands.
  */
 public enum ExpressCommand {
-  CREATE("create", ExpressCommandNotifier.CREATE_COMMAND),
-  CONTRACT("contract", ExpressCommandNotifier.CONTRACT_COMMAND),
-  RESET("reset", ExpressCommandNotifier.RESET_COMMAND),
-  RUN("run", ExpressCommandNotifier.RUN_COMMAND),
-  SHOW("show", ExpressCommandNotifier.SHOW_COMMAND),
-  TRANSFER("transfer", ExpressCommandNotifier.TRANSFER_COMMAND),
-  WALLET("wallet", ExpressCommandNotifier.WALLET_COMMAND);
+  CREATE("create"),
+  CONTRACT("contract"),
+  RESET("reset"),
+  RUN("run"),
+  SHOW("show"),
+  TRANSFER("transfer"),
+  WALLET("wallet");
 
   private final String text;
-  private final Topic<ExpressCommandNotifier> topic;
 
-  ExpressCommand(String value, Topic<ExpressCommandNotifier> topic) {
+  ExpressCommand(String value) {
     this.text = value;
-    this.topic = topic;
   }
 
   @Override
   public String toString() {
     return this.text;
-  }
-
-  public Topic<ExpressCommandNotifier> getTopic() {
-    return topic;
   }
 }
