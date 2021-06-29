@@ -11,7 +11,7 @@
 package org.neodapps.plugin.topics;
 
 import com.intellij.util.messages.Topic;
-import org.neodapps.plugin.models.ChainLike;
+import org.neodapps.plugin.blockchain.ChainLike;
 
 /**
  * An event fires when a selected node is changed.
@@ -20,5 +20,7 @@ public interface NodeChangeNotifier {
   Topic<NodeChangeNotifier> NODE_CHANGE =
       Topic.create("NODE_CHANGED", NodeChangeNotifier.class);
 
-  void afterAction(ChainLike selectedChain);
+  void nodeSelected(ChainLike selectedChain);
+
+  void nodeDeselected();
 }

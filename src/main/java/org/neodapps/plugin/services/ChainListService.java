@@ -19,14 +19,15 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.filefilter.WildcardFileFilter;
 import org.neodapps.plugin.NeoNotifier;
-import org.neodapps.plugin.models.BlockChainType;
-import org.neodapps.plugin.models.Chain;
-import org.neodapps.plugin.models.ChainLike;
-import org.neodapps.plugin.models.ConsensusNode;
-import org.neodapps.plugin.models.PrivateChain;
+import org.neodapps.plugin.blockchain.BlockChainType;
+import org.neodapps.plugin.blockchain.Chain;
+import org.neodapps.plugin.blockchain.ChainLike;
+import org.neodapps.plugin.blockchain.ConsensusNode;
+import org.neodapps.plugin.blockchain.PrivateChain;
 import org.neodapps.plugin.topics.NodeChangeNotifier;
 
 /**
@@ -36,27 +37,41 @@ public class ChainListService {
 
   private final Project neoProject;
 
-  private ChainLike selected;
+  private List<ChainLike> chains;
+  private ChainLike appliedChain;
 
   public ChainListService(Project project) {
     this.neoProject = project;
   }
 
   /**
-   * Sets the selected chain and node and sends out a refresh event.
+   * Returns the currently applied chain.
    *
-   * @param selected selected chain
+   * @return returns the applied chain
    */
-  public void setSelectedValues(ChainLike selected) {
-    this.selected = selected;
+  public Optional<ChainLike> getAppliedChain() {
+    if (appliedChain == null) {
+      return Optional.empty();
+    }
+    return Optional.of(appliedChain);
+  }
+
+  /**
+   * Sets the applied chain and node and sends out a refresh event.
+   *
+   * @param appliedChain applied chain
+   */
+  public void setAppliedChain(ChainLike appliedChain) {
+    this.appliedChain = appliedChain;
     // publish change node event so the ui get updated
     NodeChangeNotifier publisher =
         neoProject.getMessageBus().syncPublisher(NodeChangeNotifier.NODE_CHANGE);
-    publisher.afterAction(selected);
-  }
-
-  public ChainLike getSelectedValue() {
-    return selected;
+    if (appliedChain == null) {
+      publisher.nodeDeselected();
+    } else {
+      publisher.nodeSelected(appliedChain);
+    }
+    publisher.nodeSelected(this.appliedChain);
   }
 
   /**
@@ -65,7 +80,7 @@ public class ChainListService {
    * @return returns blockchain list
    */
   public List<ChainLike> loadChains() {
-    List<ChainLike> chains = new ArrayList<>();
+    chains = new ArrayList<>();
     chains.add(getTestNet());
 
     // load express chains

@@ -16,8 +16,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import org.neodapps.plugin.NeoMessageBundle;
 import org.neodapps.plugin.NeoNotifier;
-import org.neodapps.plugin.models.PrivateChain;
-import org.neodapps.plugin.models.express.ExpressCommand;
+import org.neodapps.plugin.blockchain.PrivateChain;
+import org.neodapps.plugin.blockchain.express.ExpressCommand;
 import org.neodapps.plugin.topics.ExpressCommandNotifier;
 import org.neodapps.plugin.topics.PrivateChainCreatorNotifier;
 

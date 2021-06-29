@@ -6,7 +6,7 @@
 package org.neodapps.plugin.topics;
 
 import com.intellij.util.messages.Topic;
-import org.neodapps.plugin.models.express.ExpressCommand;
+import org.neodapps.plugin.blockchain.express.ExpressCommand;
 
 /**
  * Represents topics for express commands.

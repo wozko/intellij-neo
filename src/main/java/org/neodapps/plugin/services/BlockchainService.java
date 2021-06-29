@@ -14,11 +14,11 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import org.jetbrains.annotations.NotNull;
 import org.neodapps.plugin.NeoNotifier;
-import org.neodapps.plugin.models.BlockChainType;
-import org.neodapps.plugin.models.Chain;
-import org.neodapps.plugin.models.ChainLike;
-import org.neodapps.plugin.models.NodeRunningState;
-import org.neodapps.plugin.models.PrivateChain;
+import org.neodapps.plugin.blockchain.BlockChainType;
+import org.neodapps.plugin.blockchain.Chain;
+import org.neodapps.plugin.blockchain.ChainLike;
+import org.neodapps.plugin.blockchain.NodeRunningState;
+import org.neodapps.plugin.blockchain.PrivateChain;
 
 /**
  * Represents block chain util services.
@@ -37,7 +37,9 @@ public class BlockchainService {
    * @return the status
    */
   public NodeRunningState getNodeStatus(ChainLike chain) {
-
+    if (chain == null) {
+      return NodeRunningState.NOT_RUNNING;
+    }
     if (chain.getType().equals(BlockChainType.PRIVATE)) {
       return getPrivateNodeRunningState((PrivateChain) chain);
     } else {

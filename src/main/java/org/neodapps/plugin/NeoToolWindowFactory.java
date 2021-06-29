@@ -16,7 +16,7 @@ import com.intellij.openapi.wm.ToolWindowFactory;
 import com.intellij.ui.content.Content;
 import com.intellij.ui.content.ContentFactory;
 import org.jetbrains.annotations.NotNull;
-import org.neodapps.plugin.ui.window.ToolWindowComponent;
+import org.neodapps.plugin.ui.ToolWindowController;
 
 /**
  * Supports the creation of tool window.
@@ -25,7 +25,7 @@ public class NeoToolWindowFactory implements ToolWindowFactory {
 
   @Override
   public void createToolWindowContent(@NotNull Project project, @NotNull ToolWindow toolWindow) {
-    ToolWindowComponent neoToolWindow = new ToolWindowComponent(project);
+    ToolWindowController neoToolWindow = new ToolWindowController(project);
     ContentFactory contentFactory = ContentFactory.SERVICE.getInstance();
     Content content = contentFactory.createContent(neoToolWindow.getContent(), "", false);
     toolWindow.getContentManager().addContent(content);
