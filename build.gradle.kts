@@ -18,6 +18,7 @@ repositories {
 }
 dependencies {
     implementation("commons-io:commons-io:2.10.0")
+    implementation("org.apache.commons:commons-lang3:3.12.0")
     implementation("com.google.code.gson:gson:2.8.7")
     implementation("io.neow3j:contract:3.11.2") {
         exclude("org.slf4j")

@@ -21,8 +21,8 @@ import org.neodapps.plugin.blockchain.BlockChainType;
 import org.neodapps.plugin.blockchain.ChainLike;
 import org.neodapps.plugin.blockchain.NodeRunningState;
 import org.neodapps.plugin.blockchain.PrivateChain;
-import org.neodapps.plugin.services.BlockchainService;
-import org.neodapps.plugin.services.NeoExpressService;
+import org.neodapps.plugin.services.chain.BlockchainService;
+import org.neodapps.plugin.services.express.NeoExpressService;
 import org.neodapps.plugin.topics.NodeChangeNotifier;
 import org.neodapps.plugin.ui.ToolWindowButton;
 

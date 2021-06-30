@@ -19,12 +19,12 @@
                     factoryClass="org.neodapps.plugin.NeoToolWindowFactory"/>
 
         <!-- Service that runs neo-express commands -->
-        <projectService serviceImplementation="org.neodapps.plugin.services.NeoExpressService"/>
+        <projectService serviceImplementation="org.neodapps.plugin.services.express.NeoExpressService"/>
 
         <!-- Service that keep tracks of chains in the project -->
         <projectService serviceImplementation="org.neodapps.plugin.services.ChainListService"/>
 
         <!-- Service that does chain utils -->
-        <projectService serviceImplementation="org.neodapps.plugin.services.BlockchainService"/>
+        <projectService serviceImplementation="org.neodapps.plugin.services.chain.BlockchainService"/>
     </extensions>
 </idea-plugin>

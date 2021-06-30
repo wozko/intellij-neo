@@ -20,7 +20,7 @@ import javax.swing.JPanel;
 import javax.swing.JTextField;
 import org.neodapps.plugin.NeoMessageBundle;
 import org.neodapps.plugin.blockchain.PrivateChain;
-import org.neodapps.plugin.services.NeoExpressService;
+import org.neodapps.plugin.services.express.NeoExpressService;
 import org.neodapps.plugin.ui.ToolWindowButton;
 
 /**
@@ -87,7 +87,7 @@ public class CreateWalletPopupComponent implements Disposable {
     builder.addLabeledComponent(
         new JBLabel(NeoMessageBundle.message("toolwindow.wallet.create.prompt.name")), nameField,
         true);
-    
+
     this.actionButton =
         new ToolWindowButton(NeoMessageBundle.message("toolwindow.wallet.create.prompt.action"),
             AllIcons.Actions.Execute,

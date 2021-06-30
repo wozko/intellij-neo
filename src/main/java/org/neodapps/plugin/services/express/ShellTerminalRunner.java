@@ -3,7 +3,7 @@
  *  found in the LICENSE file.
  */
 
-package org.neodapps.plugin.services;
+package org.neodapps.plugin.services.express;
 
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.Pair;

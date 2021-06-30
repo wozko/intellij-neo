@@ -3,15 +3,24 @@
  *  found in the LICENSE file.
  */
 
-package org.neodapps.plugin.services;
+package org.neodapps.plugin.services.chain;
 
 import com.intellij.openapi.project.Project;
+import io.neow3j.contract.FungibleToken;
 import io.neow3j.protocol.Neow3j;
+import io.neow3j.protocol.core.response.NeoGetNep17Balances;
 import io.neow3j.protocol.http.HttpService;
+import io.neow3j.types.Hash160;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.jetbrains.annotations.NotNull;
 import org.neodapps.plugin.NeoNotifier;
 import org.neodapps.plugin.blockchain.BlockChainType;
@@ -47,6 +56,47 @@ public class BlockchainService {
     }
   }
 
+  /**
+   * Returns the Nep17 balances of list of addresses with asset symbol.
+   *
+   * @param addresses addresses to check balances of
+   * @param chain     selected chain
+   * @return a map of token
+   */
+  public Map<String, List<AssetBalance>> getAssetBalances(
+      Set<String> addresses,
+      ChainLike chain) {
+    Map<String, List<AssetBalance>> result = new HashMap<>();
+    try {
+      var node = chain.getSelectedItem();
+      var neow3j = Neow3j
+          .build(new HttpService(String.format("%s:%d", node.getEndpoint(), node.getRpcPort())));
+
+      for (String address : addresses) {
+        var balances = neow3j.getNep17Balances(Hash160.fromAddress(address)).send().getBalances();
+        List<AssetBalance> balanceList = new ArrayList<>();
+        for (NeoGetNep17Balances.Nep17Balance balance : balances.getBalances()) {
+          var asset = balance.getAssetHash();
+          var token = new FungibleToken(asset, neow3j);
+          var decimals = token.getDecimals();
+          var balanceWithDecimals = NumberUtils.toDouble(balance.getAmount(), 0);
+          double balanceWithoutDecimals = 0;
+
+          if (balanceWithDecimals != 0) {
+            balanceWithoutDecimals = balanceWithDecimals / Math.pow(10, decimals);
+          }
+
+          balanceList.add(new AssetBalance(token.getSymbol(), asset.toAddress(), decimals,
+              balanceWithoutDecimals));
+        }
+        result.put(address, balanceList);
+      }
+    } catch (URISyntaxException | IOException e) {
+      NeoNotifier.notifyError(neoProject, e.getMessage());
+    }
+    return result;
+  }
+
   private NodeRunningState getPublicNodeRunningState(Chain chain) {
     String endpoint;
     try {
@@ -64,7 +114,6 @@ public class BlockchainService {
     } catch (IOException e) {
       return NodeRunningState.NOT_RUNNING;
     }
-
   }
 
   private NodeRunningState getPrivateNodeRunningState(PrivateChain chain) {

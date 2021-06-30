@@ -22,7 +22,7 @@ import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.ListSelectionModel;
 import org.neodapps.plugin.NeoMessageBundle;
-import org.neodapps.plugin.services.NeoExpressService;
+import org.neodapps.plugin.services.express.NeoExpressService;
 import org.neodapps.plugin.ui.ToolWindowButton;
 
 /**
