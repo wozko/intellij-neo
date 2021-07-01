@@ -19,6 +19,7 @@ import org.neodapps.plugin.blockchain.ChainLike;
 import org.neodapps.plugin.blockchain.PrivateChain;
 import org.neodapps.plugin.topics.NodeChangeNotifier;
 import org.neodapps.plugin.ui.details.blocks.BlockInfoTable;
+import org.neodapps.plugin.ui.details.contracts.ContractsComponent;
 import org.neodapps.plugin.ui.details.wallets.WalletComponent;
 
 /**
@@ -45,6 +46,7 @@ public class DetailsComponent extends Wrapper implements Disposable {
         // private chain
         if (selectedChain.getType().equals(BlockChainType.PRIVATE)) {
           addWalletComponent(selectedChain);
+          addContractsComponent(selectedChain);
         }
 
         setContent(tabs.getComponent());
@@ -69,6 +71,13 @@ public class DetailsComponent extends Wrapper implements Disposable {
     TabInfo walletTab = new TabInfo(new JBScrollPane(wallet))
         .setText(NeoMessageBundle.message("toolwindow.tabs.wallets"));
     tabs.addTab(walletTab);
+  }
+
+  private void addContractsComponent(ChainLike selectedChain) {
+    var contractsComponent = new ContractsComponent(project, (PrivateChain) selectedChain);
+    TabInfo contractTab = new TabInfo(new JBScrollPane(contractsComponent))
+        .setText(NeoMessageBundle.message("toolwindow.tabs.contracts"));
+    tabs.addTab(contractTab);
   }
 
   @Override
