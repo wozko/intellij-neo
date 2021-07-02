@@ -15,8 +15,8 @@ import com.intellij.ui.components.JBTextField;
 import com.intellij.ui.components.panels.Wrapper;
 import com.intellij.util.ui.FormBuilder;
 import com.intellij.util.ui.JBUI;
-import io.neow3j.wallet.Account;
-import io.neow3j.wallet.Wallet;
+import io.neow3j.wallet.nep6.NEP6Account;
+import io.neow3j.wallet.nep6.NEP6Wallet;
 import java.awt.FlowLayout;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
@@ -34,6 +34,7 @@ import org.neodapps.plugin.blockchain.ChainLike;
 import org.neodapps.plugin.blockchain.PrivateChain;
 import org.neodapps.plugin.services.chain.BlockchainService;
 import org.neodapps.plugin.services.chain.TokenBalance;
+import org.neodapps.plugin.services.chain.WalletService;
 import org.neodapps.plugin.ui.ToolWindowButton;
 
 /**
@@ -43,7 +44,6 @@ public class WalletComponent extends Wrapper {
 
   final Project project;
   final ChainLike chain;
-  final List<Wallet> wallets;
 
   final Wrapper walletComponent;
 
@@ -53,10 +53,9 @@ public class WalletComponent extends Wrapper {
    * @param project intellij project
    * @param chain   selected chain
    */
-  public WalletComponent(Project project, ChainLike chain, List<Wallet> wallets) {
+  public WalletComponent(Project project, ChainLike chain) {
     this.project = project;
     this.chain = chain;
-    this.wallets = wallets;
 
     walletComponent = new Wrapper();
     var panel = JBUI.Panels.simplePanel();
@@ -109,28 +108,30 @@ public class WalletComponent extends Wrapper {
   }
 
   private JComponent getWalletListComponent() {
+    var wallets = project.getService(WalletService.class).getWallets(chain);
     var balances = project.getService(BlockchainService.class)
         .getTokenBalances(wallets, chain);
     var panel = new JPanel(new GridLayout(balances.size(), 1));
 
-    var walletList = new JBList<Wallet>(balances.keySet());
+    var walletList = new JBList<NEP6Wallet>(balances.keySet());
     walletList.setCellRenderer(
         (wallList, wallet, i, b, b1) -> getWalletComponent(wallet, balances.get(wallet)));
     panel.add(walletList);
     return new JBScrollPane(panel);
   }
 
-  private JComponent getWalletComponent(Wallet wallet, List<TokenBalance> balances) {
+  private JComponent getWalletComponent(NEP6Wallet wallet, List<TokenBalance> balances) {
     var panel = new JPanel(new GridBagLayout());
     final var gbc = new GridBagConstraints();
-    panel.setBorder(JBUI.Borders.customLine(JBColor.border()));
+    panel.setBorder(
+        JBUI.Borders.compound(JBUI.Borders.customLine(JBColor.border()), JBUI.Borders.empty(5, 2)));
 
     // name and address
     var namePanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
     var nameField = new JBLabel(wallet.getName());
     nameField.setIcon(AllIcons.Ide.HectorSyntax);
     namePanel.add(nameField);
-    for (Account account : wallet.getAccounts()) {
+    for (NEP6Account account : wallet.getAccounts()) {
       namePanel.add(getTextField(account.getAddress()));
     }
     gbc.gridx = 0;

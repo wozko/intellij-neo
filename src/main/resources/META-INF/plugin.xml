@@ -22,7 +22,7 @@
         <projectService serviceImplementation="org.neodapps.plugin.services.express.NeoExpressService"/>
 
         <!-- Service that keep tracks of chains in the project -->
-        <projectService serviceImplementation="org.neodapps.plugin.services.ChainListService"/>
+        <projectService serviceImplementation="org.neodapps.plugin.services.chain.ChainListService"/>
 
         <!-- Service that does chain utils -->
         <projectService serviceImplementation="org.neodapps.plugin.services.chain.BlockchainService"/>

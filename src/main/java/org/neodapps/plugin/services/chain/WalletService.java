@@ -6,11 +6,12 @@
 package org.neodapps.plugin.services.chain;
 
 import com.intellij.openapi.project.Project;
-import io.neow3j.crypto.WIF;
+import io.neow3j.crypto.ECKeyPair;
+import io.neow3j.utils.Numeric;
 import io.neow3j.wallet.Account;
 import io.neow3j.wallet.Wallet;
+import io.neow3j.wallet.nep6.NEP6Wallet;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -32,7 +33,7 @@ public class WalletService {
   private final Project project;
 
   // a list of wallets maintained throughout project session
-  private final Map<Long, List<Wallet>> importedWallets;
+  private final Map<Long, List<NEP6Wallet>> importedWallets;
 
   public WalletService(@NotNull Project project) {
     this.project = project;
@@ -45,7 +46,7 @@ public class WalletService {
    * @param chain selected chain
    * @return returns a list of wallets
    */
-  public List<Wallet> getWallets(ChainLike chain) {
+  public List<NEP6Wallet> getWallets(ChainLike chain) {
     if (chain.getType().equals(BlockChainType.PRIVATE)) {
       return getWalletForPrivateChain((PrivateChain) chain);
     } else {
@@ -62,7 +63,7 @@ public class WalletService {
   public void addImportedWallet(String name, Path nep6File, Chain chain) {
     try {
       var wallet = Wallet.fromNEP6Wallet(nep6File.toFile())
-          .name(name);
+          .name(name).toNEP6Wallet();
       var wallets = getWallets(chain);
       wallets.add(wallet);
     } catch (IOException e) {
@@ -70,15 +71,15 @@ public class WalletService {
     }
   }
 
-  private List<Wallet> getWalletForPrivateChain(PrivateChain chain) {
-    var wallets = new ArrayList<Wallet>();
+  private List<NEP6Wallet> getWalletForPrivateChain(PrivateChain chain) {
+    var wallets = new ArrayList<NEP6Wallet>();
     for (ExpressWallet expressWallet : chain.getConfig().getWallets()) {
-      wallets.add(getNeo3jWallet(expressWallet));
+      wallets.add(getNeo3jWallet(expressWallet).toNEP6Wallet());
     }
     return wallets;
   }
 
-  private List<Wallet> getImportedWallets(Chain chain) {
+  private List<NEP6Wallet> getImportedWallets(Chain chain) {
     var magicNumber = project.getService(UtilService.class).getMagicNumber(chain);
     return importedWallets.computeIfAbsent(magicNumber, k -> new ArrayList<>());
   }
@@ -90,8 +91,8 @@ public class WalletService {
    * @return neo3j wallet account
    */
   private Account getNeo3jWalletAccount(ExpressWalletAccount expressWalletAccount) {
-    return Account.fromWIF(WIF.getWIFFromPrivateKey(expressWalletAccount.getPrivateKey().getBytes(
-        StandardCharsets.UTF_8)));
+    return new Account(
+        ECKeyPair.create(Numeric.hexStringToByteArray(expressWalletAccount.getPrivateKey())));
 
   }
 

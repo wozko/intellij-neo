@@ -8,7 +8,7 @@
  *  found in the LICENSE file.
  */
 
-package org.neodapps.plugin.services;
+package org.neodapps.plugin.services.chain;
 
 import com.intellij.openapi.project.Project;
 import java.io.File;
@@ -37,7 +37,6 @@ public class ChainListService {
 
   private final Project neoProject;
 
-  private List<ChainLike> chains;
   private ChainLike appliedChain;
 
   public ChainListService(Project project) {
@@ -80,7 +79,7 @@ public class ChainListService {
    * @return returns blockchain list
    */
   public List<ChainLike> loadChains() {
-    chains = new ArrayList<>();
+    List<ChainLike> chains = new ArrayList<>();
     chains.add(getTestNet());
 
     // load express chains

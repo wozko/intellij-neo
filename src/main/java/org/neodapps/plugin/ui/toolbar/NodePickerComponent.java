@@ -20,7 +20,7 @@ import javax.swing.JPanel;
 import org.neodapps.plugin.NeoMessageBundle;
 import org.neodapps.plugin.blockchain.ChainLike;
 import org.neodapps.plugin.blockchain.ConsensusNodeLike;
-import org.neodapps.plugin.services.ChainListService;
+import org.neodapps.plugin.services.chain.ChainListService;
 import org.neodapps.plugin.topics.NodeChangeNotifier;
 import org.neodapps.plugin.topics.PrivateChainCreatorNotifier;
 import org.neodapps.plugin.ui.ToolWindowButton;

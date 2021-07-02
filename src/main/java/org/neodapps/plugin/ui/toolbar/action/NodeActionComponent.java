@@ -14,7 +14,7 @@ import com.intellij.util.ui.JBUI;
 import java.awt.FlowLayout;
 import javax.swing.JPanel;
 import org.neodapps.plugin.NeoMessageBundle;
-import org.neodapps.plugin.services.ChainListService;
+import org.neodapps.plugin.services.chain.ChainListService;
 import org.neodapps.plugin.ui.ToolWindowButton;
 
 /**

@@ -16,6 +16,7 @@ import io.neow3j.protocol.http.HttpService;
 import io.neow3j.transaction.Signer;
 import io.neow3j.types.Hash160;
 import io.neow3j.wallet.Wallet;
+import io.neow3j.wallet.nep6.NEP6Wallet;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -100,9 +101,9 @@ public class BlockchainService {
    * @param chain selected chain
    * @return a map of token
    */
-  public Map<Wallet, List<TokenBalance>> getTokenBalances(
-      List<Wallet> wallets, ChainLike chain) {
-    Map<Wallet, List<TokenBalance>> result = new HashMap<>();
+  public Map<NEP6Wallet, List<TokenBalance>> getTokenBalances(
+      List<NEP6Wallet> wallets, ChainLike chain) {
+    Map<NEP6Wallet, List<TokenBalance>> result = new HashMap<>();
 
     Neow3j neow3j = project.getService(UtilService.class).getNeow3jInstance(chain);
     if (neow3j == null) {
@@ -110,8 +111,8 @@ public class BlockchainService {
       return result;
     }
     try {
-      for (Wallet wallet : wallets) {
-        var balances = wallet.getNep17TokenBalances(neow3j);
+      for (NEP6Wallet wallet : wallets) {
+        var balances = Wallet.fromNEP6Wallet(wallet).getNep17TokenBalances(neow3j);
         List<TokenBalance> balanceList = new ArrayList<>();
         for (Hash160 hash160 : balances.keySet()) {
           var balance = balances.get(hash160);

@@ -20,6 +20,7 @@ import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.commons.lang.StringUtils;
 import org.jetbrains.plugins.terminal.ShellTerminalWidget;
 import org.neodapps.plugin.NeoMessageBundle;
@@ -196,73 +197,39 @@ public final class NeoExpressService {
       return;
     }
 
-    var commandLine = new GeneralCommandLine();
+    var commandLine = new GeneralCommandLine().withEnvironment("DOTNET_ROOT", dotNetPath);
     commandLine.setExePath(expressPath);
     commandLine.addParameter(expressCommand.toString());
     commandLine.addParameters(options);
     commandLine.setWorkDirectory(neoProject.getBasePath());
-    commandLine = commandLine.withEnvironment("DOTNET_ROOT", dotNetPath);
-    try {
-      final var processOutput = new CapturingProcessHandler(commandLine).runProcess();
+    AtomicReference<ProcessOutput> processOutput = new AtomicReference<>();
 
-      ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
-      var future = executor.scheduleAtFixedRate(() -> {
-        if (processOutput.isExitCodeSet()) {
-          // publish an event when command is no longer running
-          var publisher = bus.syncPublisher(ExpressCommandNotifier.RUNNER);
-          publisher.afterCompletion(id);
-        }
-      }, 0, 500, TimeUnit.MILLISECONDS);
+    // running in a new thread as a workaround to "Synchronous execution on EDT" exception
+    // need to analyze this more
+    Executors.newSingleThreadExecutor().execute(() -> {
+      try {
+        processOutput.set(new CapturingProcessHandler(commandLine).runProcess());
+        ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+        var future = executor.scheduleAtFixedRate(() -> {
+          if (processOutput.get().isExitCodeSet()) {
+            // publish an event when command is no longer running
+            var publisher = bus.syncPublisher(ExpressCommandNotifier.RUNNER);
+            publisher.afterCompletion(id);
+          }
+        }, 0, 500, TimeUnit.MILLISECONDS);
 
-      // cancel the scheduler and publish command completion event
-      neoProject.getMessageBus().connect().subscribe(ExpressCommandNotifier.RUNNER,
-          (completedProcess) -> {
-            if (completedProcess.equals(id)) {
-              future.cancel(true);
-              completionAction.perform(processOutput);
-            }
-          });
-    } catch (ExecutionException e) {
-      NeoNotifier.notifyError(neoProject, e.getMessage());
-    }
-  }
-
-  /**
-   * Runs express command, wait for exit code and return output.
-   * This is used only when output is needed to be parsed (ex: show balance).
-   *
-   * @param expressCommand command to run
-   * @param options        command options
-   * @return process result after completion
-   */
-  @SuppressWarnings("unused") // implemented for completion, not used
-  private ProcessOutput runCommandSync(ExpressCommand expressCommand, List<String> options) {
-    var expressPath = getExecPath();
-    var dotNetPath = getDotNetPath();
-
-    if (expressPath == null || dotNetPath == null) {
-      // have sent notifications
-      // exiting
-      return null;
-    }
-
-    var commandLine = new GeneralCommandLine();
-    commandLine.setExePath(expressPath);
-    commandLine.addParameter(expressCommand.toString());
-    commandLine.addParameters(options);
-    commandLine.setWorkDirectory(neoProject.getBasePath());
-    commandLine = commandLine.withEnvironment("DOTNET_ROOT", dotNetPath);
-
-    try {
-      final var processOutput = new CapturingProcessHandler(commandLine).runProcess();
-      while (processOutput.isExitCodeSet() || processOutput.isCancelled()) {
-        TimeUnit.MILLISECONDS.sleep(100);
+        // cancel the scheduler and publish command completion event
+        neoProject.getMessageBus().connect().subscribe(ExpressCommandNotifier.RUNNER,
+            (completedProcess) -> {
+              if (completedProcess.equals(id)) {
+                future.cancel(true);
+                completionAction.perform(processOutput.get());
+              }
+            });
+      } catch (ExecutionException e) {
+        NeoNotifier.notifyError(neoProject, e.getMessage());
       }
-      return processOutput;
-    } catch (ExecutionException | InterruptedException e) {
-      NeoNotifier.notifyError(neoProject, e.getMessage());
-      return null;
-    }
+    });
   }
 
   /**

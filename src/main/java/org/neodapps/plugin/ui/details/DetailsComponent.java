@@ -12,7 +12,7 @@ import com.intellij.ui.components.panels.Wrapper;
 import com.intellij.ui.tabs.JBTabs;
 import com.intellij.ui.tabs.TabInfo;
 import com.intellij.ui.tabs.impl.JBTabsImpl;
-import io.neow3j.wallet.Wallet;
+import io.neow3j.wallet.nep6.NEP6Wallet;
 import java.util.List;
 import javax.swing.JPanel;
 import org.neodapps.plugin.NeoMessageBundle;
@@ -30,7 +30,7 @@ public class DetailsComponent extends Wrapper implements Disposable {
 
   private final Project project;
   private ChainLike selectedChain;
-  private List<Wallet> wallets;
+  private List<NEP6Wallet> wallets;
   private JBTabs tabs;
 
   /**
@@ -72,7 +72,7 @@ public class DetailsComponent extends Wrapper implements Disposable {
   }
 
   private void addWalletComponent() {
-    var wallet = new WalletComponent(project, selectedChain, wallets);
+    var wallet = new WalletComponent(project, selectedChain);
     TabInfo walletTab = new TabInfo(new JBScrollPane(wallet))
         .setText(NeoMessageBundle.message("toolwindow.tabs.wallets"));
     tabs.addTab(walletTab);
