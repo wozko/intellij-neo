@@ -34,5 +34,4 @@ public class ExpressWallet {
   public void setAccounts(List<ExpressWalletAccount> accounts) {
     this.accounts = accounts;
   }
-
 }

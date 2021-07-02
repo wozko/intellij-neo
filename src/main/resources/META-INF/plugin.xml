@@ -26,5 +26,11 @@
 
         <!-- Service that does chain utils -->
         <projectService serviceImplementation="org.neodapps.plugin.services.chain.BlockchainService"/>
+
+        <!--  Service that does wallet utils -->
+        <projectService serviceImplementation="org.neodapps.plugin.services.chain.WalletService"/>
+
+        <!--  A util service used by other services -->
+        <projectService serviceImplementation="org.neodapps.plugin.services.chain.UtilService"/>
     </extensions>
 </idea-plugin>

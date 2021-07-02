@@ -12,11 +12,12 @@ import com.intellij.ui.components.panels.Wrapper;
 import com.intellij.util.ui.JBUI;
 import java.awt.FlowLayout;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Objects;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
 import org.neodapps.plugin.NeoMessageBundle;
-import org.neodapps.plugin.blockchain.PrivateChain;
+import org.neodapps.plugin.blockchain.ChainLike;
 import org.neodapps.plugin.ui.ToolWindowButton;
 
 /**
@@ -33,7 +34,7 @@ public class ContractsComponent extends Wrapper {
    * @param project intellij project
    * @param chain   selected chain
    */
-  public ContractsComponent(Project project, PrivateChain chain) {
+  public ContractsComponent(Project project, ChainLike chain) {
     this.project = project;
     walletComponent = new Wrapper();
 
@@ -45,7 +46,7 @@ public class ContractsComponent extends Wrapper {
     setContent(panel);
   }
 
-  private JComponent getToolBar(PrivateChain chain) {
+  private JComponent getToolBar(ChainLike chain) {
     // toolbar has two buttons
     var buttonPanel = JBUI.Panels.simplePanel();
     buttonPanel.setLayout(new FlowLayout());
@@ -56,7 +57,8 @@ public class ContractsComponent extends Wrapper {
         new ToolWindowButton(
             NeoMessageBundle.message("contracts.deploy"),
             AllIcons.Modules.AddExcludedRoot, actionEvent -> {
-          deployContract(browseForNefFile());
+          var popup = new DeployContractPopup(project, new ArrayList<>());
+          popup.showPopup();
         });
     buttonPanel.add(deployContractButton);
 
@@ -68,7 +70,7 @@ public class ContractsComponent extends Wrapper {
         FileChooserDescriptorFactory.createSingleFileOrExecutableAppDescriptor();
     final VirtualFile toSelect =
         LocalFileSystem.getInstance().findFileByPath(Objects.requireNonNull(project.getBasePath()));
-    descriptor.setTitle(NeoMessageBundle.message("contracts.pick.file"));
+    descriptor.setTitle(NeoMessageBundle.message("contracts.deploy.pick.file"));
     VirtualFile virtualFile = FileChooser.chooseFile(descriptor, project, toSelect);
     if (virtualFile != null) {
       return virtualFile.toNioPath();
