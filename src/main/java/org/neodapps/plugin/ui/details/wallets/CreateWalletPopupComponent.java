@@ -47,6 +47,7 @@ public class CreateWalletPopupComponent implements Disposable {
           "Leah", "Jordan", "Bert"};
   private JBPopup popup;
   private JTextField nameField;
+  private JBLabel nameFieldError;
   private ToolWindowButton actionButton;
 
   public CreateWalletPopupComponent(Project project, PrivateChain chain) {
@@ -92,13 +93,24 @@ public class CreateWalletPopupComponent implements Disposable {
         new JBLabel(NeoMessageBundle.message("toolwindow.wallet.create.prompt.name")), nameField,
         true);
 
+    this.nameFieldError =
+        new JBLabel(NeoMessageBundle.message("toolwindow.wallet.create.prompt.name.error"));
+    nameFieldError.setVisible(false);
+    builder.addComponent(this.nameFieldError);
+
+
     this.actionButton =
         new ToolWindowButton(NeoMessageBundle.message("toolwindow.wallet.create.prompt.action"),
             AllIcons.Actions.Execute,
             e -> {
-              closePopup();
-              project.getService(NeoExpressService.class)
-                  .createWallet(nameField.getText(), chain);
+              var name = nameField.getText();
+              if (name.isEmpty()) {
+                nameFieldError.setVisible(true);
+              } else {
+                closePopup();
+                project.getService(NeoExpressService.class)
+                    .createWallet(name, chain);
+              }
             });
 
     builder.addComponent(actionButton);

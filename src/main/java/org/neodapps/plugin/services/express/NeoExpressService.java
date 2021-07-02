@@ -116,8 +116,6 @@ public final class NeoExpressService {
           } else {
             NeoNotifier.notifySuccess(neoProject,
                 NeoMessageBundle.message("notifications.wallet.created", name));
-            var publisher = bus.syncPublisher(PrivateChainCreatorNotifier.NEW_PRIVATE_NET_CREATED);
-            publisher.privateNetCreated(name);
           }
         });
   }
@@ -273,7 +271,7 @@ public final class NeoExpressService {
    * @return neo-express path
    */
   private String getExecPath() {
-    var path = neoProject.getService(SettingsState.class).neoExpressLocation;
+    var path = SettingsState.getInstance().neoExpressLocation;
     if (StringUtils.isEmpty(path)) {
       NeoNotifier.notifyError(neoProject, "notifications.settings.neo.path.not.set");
       return null;
@@ -282,7 +280,7 @@ public final class NeoExpressService {
   }
 
   private String getDotNetPath() {
-    var path = neoProject.getService(SettingsState.class).dotNetRoot;
+    var path = SettingsState.getInstance().dotNetRoot;
     if (StringUtils.isEmpty(path)) {
       NeoNotifier.notifyError(neoProject, "notifications.settings.net.path.not.set");
       return null;

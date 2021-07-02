@@ -16,6 +16,7 @@ import com.intellij.ui.components.JBList;
 import com.intellij.ui.components.JBScrollPane;
 import com.intellij.util.ui.FormBuilder;
 import com.intellij.util.ui.JBUI;
+import com.intellij.util.ui.UIUtil;
 import java.util.Arrays;
 import java.util.Objects;
 import javax.swing.JPanel;
@@ -33,6 +34,7 @@ public class CreatePrivateNetPopupComponent implements Disposable {
   private final Project project;
   private JBPopup popup;
   private JTextField nameField;
+  private JBLabel nameFieldError;
   private ToolWindowButton actionButton;
 
   private int nodeCount;
@@ -49,6 +51,11 @@ public class CreatePrivateNetPopupComponent implements Disposable {
     builder.addLabeledComponent(
         new JBLabel(NeoMessageBundle.message("toolwindow.private.net.prompt.name")), nameField,
         true);
+
+    nameFieldError = new JBLabel(NeoMessageBundle.message("toolwindow.private.net.name.error"));
+    nameFieldError.setFontColor(UIUtil.FontColor.BRIGHTER);
+    nameFieldError.setVisible(false);
+    builder.addComponent(nameFieldError);
 
     // node list
     var nodeList = new JBList<>(Arrays.asList(1, 4, 7));
@@ -67,9 +74,14 @@ public class CreatePrivateNetPopupComponent implements Disposable {
         new ToolWindowButton(NeoMessageBundle.message("toolwindow.private.net.prompt.action"),
             AllIcons.Actions.Execute,
             e -> {
-              closePopup();
-              project.getService(NeoExpressService.class)
-                  .createPrivateNet(nodeCount, 53, nameField.getText());
+              var name = nameField.getText();
+              if (name.isEmpty()) {
+                nameFieldError.setVisible(true);
+              } else {
+                closePopup();
+                project.getService(NeoExpressService.class)
+                    .createPrivateNet(nodeCount, 53, name);
+              }
             });
 
     builder.addComponent(actionButton);

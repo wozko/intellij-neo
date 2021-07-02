@@ -30,8 +30,10 @@ public class DeployContractPopup implements Disposable {
   private final List<Wallet> wallets;
 
   private JBPopup popup;
-  private TextFieldWithBrowseButton manifestPath;
   private TextFieldWithBrowseButton nefPath;
+  private JBLabel nefError;
+  private TextFieldWithBrowseButton manifestPath;
+  private JBLabel manifestError;
   private ToolWindowButton actionButton;
   private Wallet selectedWallet;
 
@@ -55,8 +57,12 @@ public class DeployContractPopup implements Disposable {
             .findFileByPath(Objects.requireNonNull(project.getBasePath())));
     nefPath.addBrowseFolderListener(new TextBrowseFolderListener(chooseBinary));
     builder.addLabeledComponent(
-        new JBLabel(NeoMessageBundle.message("contracts.deploy.pick.file")), nefPath,
-        true);
+        new JBLabel(NeoMessageBundle.message("contracts.deploy.pick.file")), nefPath, true);
+
+    nefError = new JBLabel(NeoMessageBundle.message("contracts.deploy.pick.file.error"));
+    nefError.setVisible(false);
+    builder.addComponent(nefError);
+
 
     manifestPath = new TextFieldWithBrowseButton();
     var chooseManifest =
@@ -69,6 +75,12 @@ public class DeployContractPopup implements Disposable {
         new JBLabel(NeoMessageBundle.message("contracts.deploy.pick.manifest.file")), manifestPath,
         true);
 
+    manifestError =
+        new JBLabel(NeoMessageBundle.message("contracts.deploy.pick.manifest.file.error"));
+    manifestError.setVisible(false);
+    builder.addComponent(manifestError);
+
+
     // wallet list
     JBList<Wallet> walletList = new JBList<>(wallets);
     walletList.setCellRenderer((walletList1, wallet, i, b, b1) -> new JBLabel(wallet.getName()));
@@ -78,17 +90,25 @@ public class DeployContractPopup implements Disposable {
     walletList.addListSelectionListener(e -> {
       selectedWallet = walletList.getSelectedValue();
     });
-    builder.addLabeledComponent(NeoMessageBundle.message("contracts.deploy.select.wallet"),
-        walletList);
-
+    builder
+        .addLabeledComponent(NeoMessageBundle.message("contracts.deploy.select.wallet"), walletList,
+            true);
 
     // deploy button
     actionButton =
         new ToolWindowButton(NeoMessageBundle.message("contracts.deploy.action"),
             AllIcons.Actions.Execute,
             e -> {
-              closePopup();
-              // todo: deploy here
+              var nefPathVal = nefPath.getText();
+              var manifestPathVal = manifestPath.getText();
+              if (nefPathVal.isEmpty()) {
+                nefError.setVisible(true);
+              } else if (manifestPathVal.isEmpty()) {
+                manifestError.setVisible(true);
+              } else {
+                closePopup();
+                // todo: deploy here
+              }
             });
     builder.addComponent(actionButton);
 
@@ -147,6 +167,7 @@ public class DeployContractPopup implements Disposable {
     }
     popup = null;
     nefPath = null;
+    manifestPath = null;
     actionButton = null;
   }
 }

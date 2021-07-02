@@ -1,3 +1,8 @@
+/*
+ *  Use of this source code is governed by the Apache 2.0 license that can be
+ *  found in the LICENSE file.
+ */
+
 package org.neodapps.plugin.ui.details.wallets;
 
 import com.intellij.icons.AllIcons;
@@ -30,7 +35,11 @@ public class ImportNep6WalletPopupComponent implements Disposable {
 
   private JBPopup popup;
   private JTextField nameField;
+  private JBLabel nameFieldError;
+
   private TextFieldWithBrowseButton nep6Path;
+  private JBLabel nep6PathError;
+
   private ToolWindowButton actionButton;
 
   public ImportNep6WalletPopupComponent(Project project, Chain chain) {
@@ -77,22 +86,40 @@ public class ImportNep6WalletPopupComponent implements Disposable {
         new JBLabel(NeoMessageBundle.message("toolwindow.wallet.import.prompt.name")), nameField,
         true);
 
-    // neo express binary location picker
+    this.nameFieldError =
+        new JBLabel(NeoMessageBundle.message("toolwindow.wallet.import.prompt.name.error"));
+    nameFieldError.setVisible(false);
+    builder.addComponent(nameFieldError);
+
     nep6Path = new TextFieldWithBrowseButton();
-    var chooseBinary =
+    var chooseManifest =
         FileChooserDescriptorFactory.createSingleFileDescriptor();
-    nep6Path.addBrowseFolderListener(new TextBrowseFolderListener(chooseBinary));
+    nep6Path.addBrowseFolderListener(new TextBrowseFolderListener(chooseManifest));
     builder.addLabeledComponent(
         new JBLabel(NeoMessageBundle.message("toolwindow.import.wallet.nep6.file")), nep6Path,
         true);
+
+    nep6PathError =
+        new JBLabel(NeoMessageBundle.message("contracts.deploy.pick.manifest.file.error"));
+    nep6PathError.setVisible(false);
+    builder.addComponent(nep6PathError);
+
 
     this.actionButton =
         new ToolWindowButton(NeoMessageBundle.message("toolwindow.wallet.create.prompt.action"),
             AllIcons.Actions.Execute,
             e -> {
-              closePopup();
-              project.getService(WalletService.class)
-                  .addImportedWallet(nameField.getText(), Paths.get(nep6Path.getText()), chain);
+              var path = nep6Path.getText();
+              var name = nameField.getText();
+              if (path.isEmpty()) {
+                nep6PathError.setEnabled(true);
+              } else if (name.isEmpty()) {
+                nameField.setEnabled(true);
+              } else {
+                closePopup();
+                project.getService(WalletService.class)
+                    .addImportedWallet(name, Paths.get(path), chain);
+              }
             });
 
     builder.addComponent(actionButton);
@@ -108,6 +135,7 @@ public class ImportNep6WalletPopupComponent implements Disposable {
     }
     popup = null;
     nameField = null;
+    nameFieldError = null;
     actionButton = null;
   }
 }
