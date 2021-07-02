@@ -9,7 +9,6 @@ import com.intellij.icons.AllIcons;
 import com.intellij.openapi.project.Project;
 import com.intellij.ui.JBColor;
 import com.intellij.ui.components.JBLabel;
-import com.intellij.ui.components.JBList;
 import com.intellij.ui.components.JBScrollPane;
 import com.intellij.ui.components.JBTextField;
 import com.intellij.ui.components.panels.Wrapper;
@@ -20,11 +19,13 @@ import io.neow3j.wallet.nep6.NEP6Wallet;
 import java.awt.FlowLayout;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
-import java.awt.GridLayout;
+import java.awt.event.FocusEvent;
+import java.awt.event.FocusListener;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.List;
 import java.util.Locale;
+import javax.swing.BoxLayout;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
 import org.neodapps.plugin.NeoMessageBundle;
@@ -111,12 +112,13 @@ public class WalletComponent extends Wrapper {
     var wallets = project.getService(WalletService.class).getWallets(chain);
     var balances = project.getService(BlockchainService.class)
         .getTokenBalances(wallets, chain);
-    var panel = new JPanel(new GridLayout(balances.size(), 1));
+    final var panel = new JPanel();
+    panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+    
+    balances.forEach((wallet, tokenBalances) -> {
+      panel.add(getWalletComponent(wallet, balances.get(wallet)));
+    });
 
-    var walletList = new JBList<NEP6Wallet>(balances.keySet());
-    walletList.setCellRenderer(
-        (wallList, wallet, i, b, b1) -> getWalletComponent(wallet, balances.get(wallet)));
-    panel.add(walletList);
     return new JBScrollPane(panel);
   }
 
@@ -162,6 +164,16 @@ public class WalletComponent extends Wrapper {
 
   private JBTextField getTextField(String content) {
     var field = new JBTextField(content);
+    field.addFocusListener(new FocusListener() {
+      @Override
+      public void focusGained(FocusEvent focusEvent) {
+        field.selectAll();
+      }
+
+      @Override
+      public void focusLost(FocusEvent focusEvent) {
+      }
+    });
     field.setEditable(false);
     return field;
   }

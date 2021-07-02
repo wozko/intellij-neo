@@ -3,7 +3,7 @@
  *  found in the LICENSE file.
  */
 
-package org.neodapps.plugin.ui.toolbar;
+package org.neodapps.plugin.ui.details;
 
 import com.intellij.icons.AllIcons;
 import com.intellij.openapi.Disposable;
@@ -21,7 +21,6 @@ import org.neodapps.plugin.blockchain.BlockChainType;
 import org.neodapps.plugin.blockchain.ChainLike;
 import org.neodapps.plugin.blockchain.NodeRunningState;
 import org.neodapps.plugin.blockchain.PrivateChain;
-import org.neodapps.plugin.services.chain.BlockchainService;
 import org.neodapps.plugin.services.express.NeoExpressService;
 import org.neodapps.plugin.topics.NodeChangeNotifier;
 import org.neodapps.plugin.ui.ToolWindowButton;
@@ -39,9 +38,13 @@ public class SelectedNodeStateComponent extends Wrapper implements Disposable {
   private ToolWindowButton actionButton;
 
   /**
-   * Creates the status component in the tool window.
+   * Shows the status if a chain is selected.
+   *
+   * @param project  intellij project
+   * @param selected selected chain
+   * @param state    is chain running
    */
-  public SelectedNodeStateComponent(Project project) {
+  public SelectedNodeStateComponent(Project project, ChainLike selected, NodeRunningState state) {
     this.project = project;
     nodeNameLabel = new JBTextField();
     nodeNameLabel.setEditable(false);
@@ -60,14 +63,17 @@ public class SelectedNodeStateComponent extends Wrapper implements Disposable {
     actionButton = new ToolWindowButton(
         NeoMessageBundle.message("toolwindow.private.net.start"),
         AllIcons.Actions.Execute);
-    setNotSelected();
 
     refreshStatusButton = new ToolWindowButton(
         NeoMessageBundle.message("toolwindow.private.net.status"),
         AllIcons.Javaee.UpdateRunningApplication
     );
-    // set listeners
-    setTopicListeners();
+
+    if (selected == null) {
+      setNotSelected();
+    } else {
+      setRunningState(selected, state);
+    }
   }
 
   /**
@@ -133,26 +139,6 @@ public class SelectedNodeStateComponent extends Wrapper implements Disposable {
     statusPanel.setBorder(JBUI.Borders.customLineBottom(JBColor.border()));
     statusPanel.add(applyInstructions);
     return statusPanel;
-  }
-
-  private void setTopicListeners() {
-    // event listeners
-    final var bus = project.getMessageBus();
-    var blockchainService = project.getService(BlockchainService.class);
-
-    // node change event
-    bus.connect().subscribe(NodeChangeNotifier.NODE_CHANGE, new NodeChangeNotifier() {
-      @Override
-      public void nodeSelected(ChainLike selectedChain) {
-        final var status = blockchainService.getNodeStatus(selectedChain);
-        setRunningState(selectedChain, status);
-      }
-
-      @Override
-      public void nodeDeselected() {
-        setNotSelected();
-      }
-    });
   }
 
   @Override

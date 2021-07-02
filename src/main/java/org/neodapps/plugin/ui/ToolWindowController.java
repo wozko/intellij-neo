@@ -9,7 +9,6 @@ import com.intellij.openapi.Disposable;
 import com.intellij.openapi.project.Project;
 import org.neodapps.plugin.ui.details.DetailsComponent;
 import org.neodapps.plugin.ui.toolbar.NodePickerComponent;
-import org.neodapps.plugin.ui.toolbar.SelectedNodeStateComponent;
 import org.neodapps.plugin.ui.toolbar.ToolBarComponent;
 import org.neodapps.plugin.ui.toolbar.action.NodeActionComponent;
 
@@ -32,8 +31,7 @@ public class ToolWindowController implements Disposable {
   public ToolWindowComponent getContent() {
     this.component = new ToolWindowComponent(
         new ToolBarComponent(new NodePickerComponent(project),
-            new NodeActionComponent(project),
-            new SelectedNodeStateComponent(project)
+            new NodeActionComponent(project)
         ),
         new DetailsComponent(project));
     return this.component;

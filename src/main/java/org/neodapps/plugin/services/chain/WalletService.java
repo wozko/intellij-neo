@@ -7,6 +7,7 @@ package org.neodapps.plugin.services.chain;
 
 import com.intellij.openapi.project.Project;
 import io.neow3j.crypto.ECKeyPair;
+import io.neow3j.crypto.exceptions.CipherException;
 import io.neow3j.utils.Numeric;
 import io.neow3j.wallet.Account;
 import io.neow3j.wallet.Wallet;
@@ -31,6 +32,7 @@ import org.neodapps.plugin.blockchain.express.ExpressWalletAccount;
  */
 public class WalletService {
   private final Project project;
+  private final String password = "neo";
 
   // a list of wallets maintained throughout project session
   private final Map<Long, List<NEP6Wallet>> importedWallets;
@@ -73,8 +75,14 @@ public class WalletService {
 
   private List<NEP6Wallet> getWalletForPrivateChain(PrivateChain chain) {
     var wallets = new ArrayList<NEP6Wallet>();
-    for (ExpressWallet expressWallet : chain.getConfig().getWallets()) {
-      wallets.add(getNeo3jWallet(expressWallet).toNEP6Wallet());
+    try {
+      for (ExpressWallet expressWallet : chain.getConfig().getWallets()) {
+        var wallet = getNeo3jWallet(expressWallet);
+        wallet.encryptAllAccounts(password);
+        wallets.add(wallet.toNEP6Wallet());
+      }
+    } catch (CipherException e) {
+      e.printStackTrace();
     }
     return wallets;
   }
