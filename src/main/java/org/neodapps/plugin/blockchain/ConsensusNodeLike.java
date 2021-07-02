@@ -5,15 +5,9 @@
 
 package org.neodapps.plugin.blockchain;
 
-import java.net.URI;
-import java.net.URISyntaxException;
-
 /**
  * Represents a node interface of private or public chain.
  */
 public interface ConsensusNodeLike {
-
-  URI getEndpoint() throws URISyntaxException;
-
-  Integer getRpcPort();
+  String getUrl();
 }

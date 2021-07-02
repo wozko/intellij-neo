@@ -10,7 +10,6 @@ import io.neow3j.protocol.Neow3j;
 import io.neow3j.protocol.Neow3jConfig;
 import io.neow3j.protocol.http.HttpService;
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import org.neodapps.plugin.NeoNotifier;
@@ -36,15 +35,7 @@ public class UtilService {
    * @return neow3j instance
    */
   public Neow3j getNeow3jInstance(ChainLike chain) {
-    String endpoint;
-    try {
-      endpoint = String.format("%s:%d", chain.getSelectedItem().getEndpoint(),
-          chain.getSelectedItem().getRpcPort());
-    } catch (URISyntaxException e) {
-      NeoNotifier.notifyError(project, e.getMessage());
-      return null;
-    }
-
+    var endpoint = chain.getSelectedItem().getUrl();
     Neow3j neow3j;
     if (chain.getType().equals(BlockChainType.PRIVATE)) {
       // set magic number

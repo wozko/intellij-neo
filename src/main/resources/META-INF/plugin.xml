@@ -30,6 +30,9 @@
         <!--  Service that does wallet utils -->
         <projectService serviceImplementation="org.neodapps.plugin.services.chain.WalletService"/>
 
+        <!--  Service that does contract utils -->
+        <projectService serviceImplementation="org.neodapps.plugin.services.chain.ContractServices"/>
+
         <!--  A util service used by other services -->
         <projectService serviceImplementation="org.neodapps.plugin.services.chain.UtilService"/>
     </extensions>

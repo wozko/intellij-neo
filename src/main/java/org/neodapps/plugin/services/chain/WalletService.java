@@ -32,7 +32,14 @@ import org.neodapps.plugin.blockchain.express.ExpressWalletAccount;
  */
 public class WalletService {
   private final Project project;
-  private final String password = "neo";
+
+  /*
+   * Neow3j Nep6Wallet/Nep6Account requires private key to be encrypted.
+   * On a local development scenario using neo-express, it is not ideal to
+   * prompt for password. Hence we use a hardcoded password to encrypt the
+   * wallet. This only applies to neo-express wallets.
+   */
+  private static final String NEO_EXPRESS_WALLETS_PASSWORD = "NEO";
 
   // a list of wallets maintained throughout project session
   private final Map<Long, List<NEP6Wallet>> importedWallets;
@@ -78,7 +85,7 @@ public class WalletService {
     try {
       for (ExpressWallet expressWallet : chain.getConfig().getWallets()) {
         var wallet = getNeo3jWallet(expressWallet);
-        wallet.encryptAllAccounts(password);
+        wallet.encryptAllAccounts(NEO_EXPRESS_WALLETS_PASSWORD);
         wallets.add(wallet.toNEP6Wallet());
       }
     } catch (CipherException e) {

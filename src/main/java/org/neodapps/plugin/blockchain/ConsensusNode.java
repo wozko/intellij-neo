@@ -5,30 +5,23 @@
 
 package org.neodapps.plugin.blockchain;
 
-import java.net.URI;
-
 /**
  * Represents a consensus node in a public chain.
  */
 public class ConsensusNode implements ConsensusNodeLike {
-  private final URI endpoint;
-  private final Integer rpcPort;
+  private final String url;
 
-  public ConsensusNode(URI endpoint, Integer rpcPort) {
-    this.endpoint = endpoint;
-    this.rpcPort = rpcPort;
-  }
-
-  public URI getEndpoint() {
-    return endpoint;
-  }
-
-  public Integer getRpcPort() {
-    return rpcPort;
+  public ConsensusNode(String endpoint, Integer rpcPort) {
+    this.url = String.format("%s:%d", endpoint, rpcPort);
   }
 
   @Override
   public String toString() {
-    return String.format("%s:%d", endpoint, rpcPort);
+    return this.url;
+  }
+
+  @Override
+  public String getUrl() {
+    return this.url;
   }
 }

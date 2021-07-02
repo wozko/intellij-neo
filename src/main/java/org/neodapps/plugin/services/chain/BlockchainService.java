@@ -19,7 +19,6 @@ import io.neow3j.wallet.Wallet;
 import io.neow3j.wallet.nep6.NEP6Wallet;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.file.Path;
@@ -145,18 +144,10 @@ public class BlockchainService {
   }
 
   private NodeRunningState getPrivateNodeRunningState(PrivateChain chain) {
-    String endpoint;
-    try {
-      endpoint = String.format("%s:%d", chain.getSelectedItem().getEndpoint(),
-          chain.getSelectedItem().getRpcPort());
-    } catch (URISyntaxException e) {
-      return NodeRunningState.NOT_RUNNING;
-    }
-
     long magicNumber;
     try {
       // check if running without magic number
-      var neow3j = Neow3j.build(new HttpService(endpoint));
+      var neow3j = Neow3j.build(new HttpService(chain.getSelectedItem().getUrl()));
       neow3j.getBlockCount().send().getBlockCount();
 
       // get the magic number of running instance
@@ -173,10 +164,7 @@ public class BlockchainService {
     if (chain.getConfig().getMagic() == magicNumber) {
       return NodeRunningState.RUNNING;
     }
-
     return NodeRunningState.NOT_RUNNING;
   }
-
-
 }
 

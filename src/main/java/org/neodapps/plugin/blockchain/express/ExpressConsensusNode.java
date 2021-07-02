@@ -6,8 +6,6 @@
 package org.neodapps.plugin.blockchain.express;
 
 import com.google.gson.annotations.SerializedName;
-import java.net.URI;
-import java.net.URISyntaxException;
 import org.neodapps.plugin.blockchain.ConsensusNodeLike;
 
 /**
@@ -47,7 +45,6 @@ public class ExpressConsensusNode implements ConsensusNodeLike {
     this.wsPort = wsPort;
   }
 
-  @Override
   public Integer getRpcPort() {
     return rpcPort;
   }
@@ -73,8 +70,8 @@ public class ExpressConsensusNode implements ConsensusNodeLike {
   }
 
   @Override
-  public URI getEndpoint() throws URISyntaxException {
-    return new URI("http://127.0.0.1");
+  public String getUrl() {
+    return String.format("%s:%d", "http://127.0.0.1", rpcPort);
   }
 
   @Override

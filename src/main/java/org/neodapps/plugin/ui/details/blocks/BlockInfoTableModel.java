@@ -84,10 +84,8 @@ public class BlockInfoTableModel extends AbstractTableModel implements Disposabl
    * @throws URISyntaxException thrown when url is in an invalid format.
    */
   public void subscribe(ChainLike selectedChain) throws URISyntaxException, IOException {
-    var node = selectedChain.getSelectedItem();
-    var endpoint = node.getEndpoint().toString();
     var neow3j =
-        Neow3j.build(new HttpService(String.format("%s:%d", endpoint, node.getRpcPort())));
+        Neow3j.build(new HttpService(selectedChain.getSelectedItem().getUrl()));
     var blockCount = neow3j.getBlockCount().send().getBlockCount();
     var observable = neow3j
         .catchUpToLatestAndSubscribeToNewBlocksObservable(
