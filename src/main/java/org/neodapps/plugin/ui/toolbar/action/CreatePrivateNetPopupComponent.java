@@ -22,6 +22,7 @@ import java.util.Objects;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.ListSelectionModel;
+import javax.swing.SwingWorker;
 import org.neodapps.plugin.NeoMessageBundle;
 import org.neodapps.plugin.services.express.NeoExpressService;
 import org.neodapps.plugin.ui.ToolWindowButton;
@@ -64,9 +65,7 @@ public class CreatePrivateNetPopupComponent implements Disposable {
         new JBLabel(NeoMessageBundle.message("toolwindow.private.net.prompt.nodes")),
         new JBScrollPane(nodeList), true);
 
-    nodeList.addListSelectionListener(e -> {
-      nodeCount = nodeList.getSelectedValue();
-    });
+    nodeList.addListSelectionListener(e -> nodeCount = nodeList.getSelectedValue());
     nodeList.setSelectedIndex(0);
 
     // create button
@@ -79,8 +78,7 @@ public class CreatePrivateNetPopupComponent implements Disposable {
                 nameFieldError.setVisible(true);
               } else {
                 closePopup();
-                project.getService(NeoExpressService.class)
-                    .createPrivateNet(nodeCount, 53, name);
+                createPrivateNet(name);
               }
             });
 
@@ -88,6 +86,18 @@ public class CreatePrivateNetPopupComponent implements Disposable {
     JPanel content = builder.getPanel();
     content.setBorder(JBUI.Borders.empty(0, 10));
     return content;
+  }
+
+  private void createPrivateNet(String name) {
+    var worker = new SwingWorker<Void, Void>() {
+      @Override
+      protected Void doInBackground() {
+        project.getService(NeoExpressService.class)
+            .createPrivateNet(nodeCount, name);
+        return null;
+      }
+    };
+    worker.execute();
   }
 
   /**

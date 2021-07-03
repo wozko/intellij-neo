@@ -12,8 +12,6 @@ import java.util.UUID;
  * Represents topics for express commands.
  */
 public interface ExpressCommandNotifier {
-  Topic<ExpressCommandNotifier> ANY_COMMAND =
-      Topic.create("ANY_COMMAND", ExpressCommandNotifier.class);
   Topic<ExpressCommandNotifier> RUNNER =
       Topic.create("RUNNER", ExpressCommandNotifier.class);
 

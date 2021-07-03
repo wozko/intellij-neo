@@ -13,6 +13,7 @@ import com.intellij.ui.components.panels.Wrapper;
 import com.intellij.util.ui.JBUI;
 import java.awt.FlowLayout;
 import javax.swing.JPanel;
+import javax.swing.SwingWorker;
 import org.neodapps.plugin.NeoMessageBundle;
 import org.neodapps.plugin.services.chain.ChainListService;
 import org.neodapps.plugin.ui.ToolWindowButton;
@@ -25,13 +26,13 @@ public class NodeActionComponent extends Wrapper implements Disposable {
   private ToolWindowButton createPrivateNetButton;
   private ToolWindowButton refreshButton;
 
+  private final Project project;
+
   /**
    * Creates the node action component.
    */
   public NodeActionComponent(Project project) {
-    var service = project.getService(ChainListService.class);
-    var bus = project.getMessageBus();
-
+    this.project = project;
     createPrivateNetButton =
         new ToolWindowButton(NeoMessageBundle.message("toolwindow.create.private.net"),
             AllIcons.General.Add,
@@ -40,17 +41,25 @@ public class NodeActionComponent extends Wrapper implements Disposable {
               popup.showPopup();
             });
 
-    refreshButton = new ToolWindowButton("", AllIcons.Javaee.UpdateRunningApplication,
-        e -> {
-          // set applied chain to empty
-          service.setAppliedChain(null);
-        });
+    refreshButton =
+        new ToolWindowButton("", AllIcons.Javaee.UpdateRunningApplication, e -> refresh());
 
     var panel = new JPanel(new FlowLayout());
     panel.setBorder(JBUI.Borders.customLine(JBColor.border()));
     panel.add(createPrivateNetButton);
     panel.add(refreshButton);
     setContent(panel);
+  }
+
+  private void refresh() {
+    var worker = new SwingWorker<Void, Void>() {
+      @Override
+      protected Void doInBackground() {
+        project.getService(ChainListService.class).setAppliedChain(null);
+        return null;
+      }
+    };
+    worker.execute();
   }
 
   @Override

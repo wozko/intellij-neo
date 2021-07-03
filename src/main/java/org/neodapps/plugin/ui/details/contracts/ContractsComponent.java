@@ -1,3 +1,8 @@
+/*
+ *  Use of this source code is governed by the Apache 2.0 license that can be
+ *  found in the LICENSE file.
+ */
+
 package org.neodapps.plugin.ui.details.contracts;
 
 import com.intellij.icons.AllIcons;
@@ -10,10 +15,14 @@ import com.intellij.util.ui.JBUI;
 import io.neow3j.protocol.core.response.NeoGetContractState;
 import java.awt.FlowLayout;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
 import javax.swing.BoxLayout;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
+import javax.swing.SwingWorker;
 import org.neodapps.plugin.NeoMessageBundle;
+import org.neodapps.plugin.NeoNotifier;
 import org.neodapps.plugin.blockchain.ChainLike;
 import org.neodapps.plugin.services.chain.ContractServices;
 import org.neodapps.plugin.ui.ToolWindowButton;
@@ -44,8 +53,41 @@ public class ContractsComponent extends Wrapper {
     panel.addToTop(getToolBar(chain));
     panel.addToCenter(contractsComponent);
 
-    contractsComponent.setContent(getComponent());
+    contractsComponent.setContent(getLoadingComponent());
     setContent(panel);
+    setContractList();
+  }
+
+  private void setContractList() {
+    var worker = new SwingWorker<List<NeoGetContractState.ContractState>, Void>() {
+      @Override
+      protected List<NeoGetContractState.ContractState> doInBackground() {
+        return project.getService(ContractServices.class).getContracts(chain);
+      }
+
+      @Override
+      protected void done() {
+        try {
+          var contracts = get();
+          final var panel = new JPanel();
+          panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+
+          contracts.forEach(contractState -> panel.add(getContractComponent(contractState)));
+
+          contractsComponent.setContent(new JBScrollPane(panel));
+        } catch (InterruptedException | ExecutionException e) {
+          NeoNotifier.notifyError(project, e.getMessage());
+        }
+      }
+    };
+    worker.execute();
+  }
+
+  private JComponent getLoadingComponent() {
+    var panel = new JPanel();
+    panel.setBorder(JBUI.Borders.empty(5));
+    panel.add(new JBLabel(NeoMessageBundle.message("toolwindow.loading")));
+    return panel;
   }
 
   private JComponent getToolBar(ChainLike chain) {
@@ -67,18 +109,6 @@ public class ContractsComponent extends Wrapper {
     return buttonPanel;
   }
 
-  private JComponent getComponent() {
-    var contracts = project.getService(ContractServices.class).getContracts(chain);
-    final var panel = new JPanel();
-    panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-
-    contracts.forEach(contractState -> {
-      panel.add(getContractComponent(contractState));
-    });
-
-    return new JBScrollPane(panel);
-  }
-
   private JComponent getContractComponent(NeoGetContractState.ContractState contractState) {
     final var panel = new JPanel();
     panel.setBorder(
@@ -89,5 +119,4 @@ public class ContractsComponent extends Wrapper {
 
     return panel;
   }
-
 }

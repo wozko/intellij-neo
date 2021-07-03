@@ -19,6 +19,7 @@ import java.util.Objects;
 import java.util.Random;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
+import javax.swing.SwingWorker;
 import org.neodapps.plugin.NeoMessageBundle;
 import org.neodapps.plugin.blockchain.PrivateChain;
 import org.neodapps.plugin.services.express.NeoExpressService;
@@ -98,7 +99,6 @@ public class CreateWalletPopupComponent implements Disposable {
     nameFieldError.setVisible(false);
     builder.addComponent(this.nameFieldError);
 
-
     this.actionButton =
         new ToolWindowButton(NeoMessageBundle.message("toolwindow.wallet.create.prompt.action"),
             AllIcons.Actions.Execute,
@@ -108,8 +108,7 @@ public class CreateWalletPopupComponent implements Disposable {
                 nameFieldError.setVisible(true);
               } else {
                 closePopup();
-                project.getService(NeoExpressService.class)
-                    .createWallet(name, chain);
+                createWallet(name, chain);
               }
             });
 
@@ -117,6 +116,18 @@ public class CreateWalletPopupComponent implements Disposable {
     JPanel content = builder.getPanel();
     content.setBorder(JBUI.Borders.empty(4, 10));
     return content;
+  }
+
+  private void createWallet(String name, PrivateChain chain) {
+    var worker = new SwingWorker<Void, Void>() {
+      @Override
+      protected Void doInBackground() {
+        project.getService(NeoExpressService.class)
+            .createWallet(name, chain);
+        return null;
+      }
+    };
+    worker.execute();
   }
 
   @Override

@@ -41,6 +41,8 @@ public class WalletService {
    */
   private static final String NEO_EXPRESS_WALLETS_PASSWORD = "NEO";
 
+  public static final String GENESIS = "genesis";
+
   // a list of wallets maintained throughout project session
   private final Map<Long, List<NEP6Wallet>> importedWallets;
 
@@ -89,7 +91,7 @@ public class WalletService {
         wallets.add(wallet.toNEP6Wallet());
       }
     } catch (CipherException e) {
-      e.printStackTrace();
+      NeoNotifier.notifyError(project, e.getMessage());
     }
     return wallets;
   }
@@ -108,7 +110,6 @@ public class WalletService {
   private Account getNeo3jWalletAccount(ExpressWalletAccount expressWalletAccount) {
     return new Account(
         ECKeyPair.create(Numeric.hexStringToByteArray(expressWalletAccount.getPrivateKey())));
-
   }
 
   /**

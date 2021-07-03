@@ -32,6 +32,7 @@ public class SelectedNodeStateComponent extends Wrapper implements Disposable {
 
   private final Project project;
   private final ToolWindowButton refreshStatusButton;
+
   private JBTextField nodeNameLabel;
   private JBLabel nodeStatusLabel;
   private JPanel applyInstructions;
@@ -40,11 +41,10 @@ public class SelectedNodeStateComponent extends Wrapper implements Disposable {
   /**
    * Shows the status if a chain is selected.
    *
-   * @param project  intellij project
-   * @param selected selected chain
-   * @param state    is chain running
+   * @param project intellij project
    */
-  public SelectedNodeStateComponent(Project project, ChainLike selected, NodeRunningState state) {
+  public SelectedNodeStateComponent(Project project, ChainLike selected, NodeRunningState state,
+                                    boolean loading) {
     this.project = project;
     nodeNameLabel = new JBTextField();
     nodeNameLabel.setEditable(false);
@@ -69,7 +69,9 @@ public class SelectedNodeStateComponent extends Wrapper implements Disposable {
         AllIcons.Javaee.UpdateRunningApplication
     );
 
-    if (selected == null) {
+    if (loading) {
+      setLoading();
+    } else if (selected == null) {
       setNotSelected();
     } else {
       setRunningState(selected, state);
@@ -80,7 +82,14 @@ public class SelectedNodeStateComponent extends Wrapper implements Disposable {
    * Sets the status as not selected.
    */
   private void setNotSelected() {
-    setContent(getNotSelectedContent());
+    var content = getNotSelectedContent();
+    setContent(content);
+  }
+
+  private void setLoading() {
+    var panel = new JPanel(new FlowLayout());
+    panel.add(new JBLabel(NeoMessageBundle.message("toolwindow.loading")));
+    setContent(panel);
   }
 
   /**
@@ -111,16 +120,15 @@ public class SelectedNodeStateComponent extends Wrapper implements Disposable {
     Arrays.stream(actionButton.getActionListeners())
         .forEach(l -> actionButton.removeActionListener(l));
 
-    var neoExpressService = project.getService(NeoExpressService.class);
-
     actionButton.addActionListener(a -> {
-      neoExpressService.runPrivateNet((PrivateChain) chain);
+      // do not run this in background
+      project.getService(NeoExpressService.class)
+          .runPrivateNet((PrivateChain) chain);
     });
 
-    refreshStatusButton.addActionListener(a -> {
-      var publisher = project.getMessageBus().syncPublisher(NodeChangeNotifier.NODE_CHANGE);
-      publisher.nodeSelected(chain);
-    });
+    refreshStatusButton.addActionListener(
+        a -> project.getMessageBus().syncPublisher(NodeChangeNotifier.NODE_CHANGE)
+            .nodeSelected(chain));
   }
 
   private JPanel getRunningStateContent(String nodeName, NodeRunningState runningState) {

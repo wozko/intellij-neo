@@ -48,17 +48,17 @@ public class BlockchainService {
    * Returns the status of a node.
    *
    * @param chain chain to check the status
-   * @return the status
    */
-  public NodeRunningState getNodeStatus(ChainLike chain) {
-    if (chain == null) {
-      return NodeRunningState.NOT_RUNNING;
+  public NodeRunningState checkNodeStatus(ChainLike chain) {
+    var state = NodeRunningState.NOT_RUNNING;
+    if (chain != null) {
+      if (chain.getType().equals(BlockChainType.PRIVATE)) {
+        state = getPrivateNodeRunningState((PrivateChain) chain);
+      } else {
+        state = getPublicNodeRunningState((Chain) chain);
+      }
     }
-    if (chain.getType().equals(BlockChainType.PRIVATE)) {
-      return getPrivateNodeRunningState((PrivateChain) chain);
-    } else {
-      return getPublicNodeRunningState((Chain) chain);
-    }
+    return state;
   }
 
   /**

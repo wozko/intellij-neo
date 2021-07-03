@@ -14,10 +14,13 @@ import com.intellij.ui.components.panels.Wrapper;
 import com.intellij.util.ui.JBUI;
 import java.awt.FlowLayout;
 import java.awt.event.ItemEvent;
-import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.ExecutionException;
 import javax.swing.JPanel;
+import javax.swing.SwingWorker;
 import org.neodapps.plugin.NeoMessageBundle;
+import org.neodapps.plugin.NeoNotifier;
 import org.neodapps.plugin.blockchain.ChainLike;
 import org.neodapps.plugin.blockchain.ConsensusNodeLike;
 import org.neodapps.plugin.services.chain.ChainListService;
@@ -35,10 +38,6 @@ public class NodePickerComponent extends Wrapper implements Disposable {
   private ComboBox<ConsensusNodeLike> nodeComboBox;
   private ToolWindowButton applyButton;
 
-  private List<ChainLike> chains;
-  private ChainLike selectedChain;
-  private int selectedIndex;
-
   /**
    * Creates the node picker component.
    */
@@ -53,9 +52,10 @@ public class NodePickerComponent extends Wrapper implements Disposable {
     // change node list on chain change
     chainComboBox.addItemListener(e -> {
       if (e.getStateChange() == ItemEvent.SELECTED) {
-        selectedChain = (ChainLike) chainComboBox.getSelectedItem();
+        var selectedChain = (ChainLike) chainComboBox.getSelectedItem();
 
         nodeComboBox.removeAllItems();
+        assert selectedChain != null;
         for (ConsensusNodeLike node : selectedChain.getNodes()) {
           nodeComboBox.addItem(node);
         }
@@ -69,7 +69,6 @@ public class NodePickerComponent extends Wrapper implements Disposable {
 
     nodeComboBox.addItemListener(e -> {
       if (e.getStateChange() == ItemEvent.SELECTED) {
-        selectedIndex = nodeComboBox.getSelectedIndex();
         // un-applied changed
         showIconAsUnsavedChanges();
       }
@@ -82,53 +81,109 @@ public class NodePickerComponent extends Wrapper implements Disposable {
     chainPickerPanel.add(applyButton);
     setContent(chainPickerPanel);
 
-    // data
-    var service = project.getService(ChainListService.class);
-    var chains = service.loadChains();
-    var appliedChain = service.getAppliedChain();
-    setChains(chains);
-    appliedChain.ifPresent(this::setSelectedChain);
+    // set default chains
+    setChains(null);
 
     // apply button action
-    setApplyButtonAction();
+    applyButton.addActionListener(
+        e -> {
+          final var selected = (ChainLike) chainComboBox.getSelectedItem();
+          assert selected != null;
+          selected.setSelectedIndex(nodeComboBox.getSelectedIndex());
+          applyChanges(selected);
+        }
+    );
 
     // set listeners
-    setTopicListeners(project);
+    var bus = project.getMessageBus();
+    // node change
+    bus.connect().subscribe(NodeChangeNotifier.NODE_CHANGE, new NodeChangeNotifier() {
+      @Override
+      public void nodeSelected(ChainLike selectedChain) {
+        setSelectedChain(selectedChain);
+      }
+
+      @Override
+      public void nodeDeselected() {
+        setChains(null);
+      }
+    });
+
+    // new net created
+    bus.connect()
+        .subscribe(PrivateChainCreatorNotifier.NEW_PRIVATE_NET_CREATED, this::setChains);
   }
+
 
   /**
    * Sets chains to the chain list.
    */
-  private void setChains(List<ChainLike> chains) {
-    this.chains = chains;
-    // remove all
-    chainComboBox.removeAllItems();
-
-    for (ChainLike chain : chains) {
-      chainComboBox.addItem(chain);
-    }
-  }
-
-  /**
-   * Set action on apply button.
-   */
-  private void setApplyButtonAction() {
-    // remove older listeners
-    Arrays.stream(applyButton.getActionListeners())
-        .forEach(l -> applyButton.removeActionListener(l));
-
-    var service = project.getService(ChainListService.class);
-    applyButton.addActionListener(
-        e -> {
-          final var selected = getSelectedChain();
-          selected.setSelectedIndex(getSelectedNode());
-          service.setAppliedChain(selected);
+  private void setChains(String newlyAddedChainName) {
+    var worker = new SwingWorker<List<ChainLike>, Void>() {
+      @Override
+      protected List<ChainLike> doInBackground() {
+        var service = project.getService(ChainListService.class);
+        if (newlyAddedChainName == null) {
+          return service.loadChains();
+        } else {
+          return service.loadAndLookForNewChain(newlyAddedChainName);
         }
-    );
+      }
+
+      @Override
+      protected void done() {
+        try {
+          var chains = get();
+          // remove all
+          chainComboBox.removeAllItems();
+
+          for (ChainLike chain : chains) {
+            chainComboBox.addItem(chain);
+          }
+
+          markSelectedChain(chains);
+        } catch (InterruptedException | ExecutionException e) {
+          NeoNotifier.notifyError(project, e.getMessage());
+        }
+      }
+    };
+    worker.execute();
   }
 
-  private ChainLike getSelectedChain() {
-    return selectedChain;
+  private void markSelectedChain(List<ChainLike> chains) {
+    var worker = new SwingWorker<Optional<ChainLike>, Void>() {
+      @Override
+      protected Optional<ChainLike> doInBackground() {
+        var service = project.getService(ChainListService.class);
+        return service.getAppliedChain();
+      }
+
+      @Override
+      protected void done() {
+        try {
+          var appliedChain = get();
+          appliedChain.ifPresent(chainLike -> setSelectedChain(chainLike));
+          if (appliedChain.isEmpty()) {
+            setSelectedChain(chains.get(0));
+          }
+        } catch (InterruptedException | ExecutionException e) {
+          NeoNotifier.notifyError(project, e.getMessage());
+        }
+      }
+    };
+    worker.execute();
+  }
+
+  private void applyChanges(ChainLike selected) {
+    var worker = new SwingWorker<Void, Void>() {
+      @Override
+      protected Void doInBackground() {
+        var service = project.getService(ChainListService.class);
+        service.setAppliedChain(selected);
+        return null;
+      }
+    };
+    worker.execute();
   }
 
   /**
@@ -137,22 +192,14 @@ public class NodePickerComponent extends Wrapper implements Disposable {
    * @param chain selected chain
    */
   private void setSelectedChain(ChainLike chain) {
-    if (chain == null) {
-      chain = chains.get(0);
-    }
     chainComboBox.setSelectedItem(chain);
     nodeComboBox.removeAllItems();
     for (ConsensusNodeLike node : chain.getNodes()) {
       nodeComboBox.addItem(node);
     }
     nodeComboBox.setSelectedIndex(chain.getSelectedIndex());
-
     // reset icon changes
     resetApplyButtonChange();
-  }
-
-  private int getSelectedNode() {
-    return selectedIndex;
   }
 
   @Override
@@ -169,29 +216,5 @@ public class NodePickerComponent extends Wrapper implements Disposable {
 
   private void resetApplyButtonChange() {
     applyButton.setIcon(AllIcons.Actions.BuildLoadChanges);
-  }
-
-  private void setTopicListeners(Project project) {
-    var bus = project.getMessageBus();
-    var service = project.getService(ChainListService.class);
-
-    // node changed
-    bus.connect().subscribe(NodeChangeNotifier.NODE_CHANGE, new NodeChangeNotifier() {
-      @Override
-      public void nodeSelected(ChainLike selectedChain) {
-        setSelectedChain(selectedChain);
-      }
-
-      @Override
-      public void nodeDeselected() {
-        setChains(service.loadChains());
-      }
-    });
-
-    // new net created
-    bus.connect()
-        .subscribe(PrivateChainCreatorNotifier.NEW_PRIVATE_NET_CREATED, (privateNetName) -> {
-          setChains(service.loadAndLookForNewChain(privateNetName));
-        });
   }
 }

@@ -21,6 +21,7 @@ import java.nio.file.Paths;
 import java.util.Objects;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
+import javax.swing.SwingWorker;
 import org.neodapps.plugin.NeoMessageBundle;
 import org.neodapps.plugin.blockchain.Chain;
 import org.neodapps.plugin.services.chain.WalletService;
@@ -104,7 +105,6 @@ public class ImportNep6WalletPopupComponent implements Disposable {
     nep6PathError.setVisible(false);
     builder.addComponent(nep6PathError);
 
-
     this.actionButton =
         new ToolWindowButton(NeoMessageBundle.message("toolwindow.wallet.create.prompt.action"),
             AllIcons.Actions.Execute,
@@ -117,8 +117,7 @@ public class ImportNep6WalletPopupComponent implements Disposable {
                 nameField.setEnabled(true);
               } else {
                 closePopup();
-                project.getService(WalletService.class)
-                    .addImportedWallet(name, Paths.get(path), chain);
+                transferAsset(name, path, chain);
               }
             });
 
@@ -126,6 +125,18 @@ public class ImportNep6WalletPopupComponent implements Disposable {
     JPanel content = builder.getPanel();
     content.setBorder(JBUI.Borders.empty(4, 10));
     return content;
+  }
+
+  private void transferAsset(String name, String path, Chain chain) {
+    var worker = new SwingWorker<Void, Void>() {
+      @Override
+      protected Void doInBackground() {
+        project.getService(WalletService.class)
+            .addImportedWallet(name, Paths.get(path), chain);
+        return null;
+      }
+    };
+    worker.execute();
   }
 
   @Override

@@ -25,6 +25,7 @@ import org.apache.commons.lang.StringUtils;
 import org.jetbrains.plugins.terminal.ShellTerminalWidget;
 import org.neodapps.plugin.NeoMessageBundle;
 import org.neodapps.plugin.NeoNotifier;
+import org.neodapps.plugin.blockchain.ChainLike;
 import org.neodapps.plugin.blockchain.PrivateChain;
 import org.neodapps.plugin.blockchain.express.ExpressCommand;
 import org.neodapps.plugin.persistance.SettingsState;
@@ -38,6 +39,7 @@ public final class NeoExpressService {
 
   private final Project neoProject;
   private final MessageBus bus;
+  private static final long ADDRESS_VERSION = 53;
 
   /**
    * Runs express commands.
@@ -52,11 +54,10 @@ public final class NeoExpressService {
   /**
    * Creates a private net configuration.
    *
-   * @param numberOfNodes  Number of consensus nodes to create, Allowed values are: 1, 4, 7
-   * @param addressVersion Version to use for addresses in this blockchain instance
-   * @param name           Name of the configuration
+   * @param numberOfNodes Number of consensus nodes to create, Allowed values are: 1, 4, 7
+   * @param name          Name of the configuration
    */
-  public void createPrivateNet(int numberOfNodes, long addressVersion, String name) {
+  public void createPrivateNet(int numberOfNodes, String name) {
     var id = UUID.randomUUID();
     if (numberOfNodes != 1 && numberOfNodes != 4 && numberOfNodes != 7) {
       numberOfNodes = 1;
@@ -64,7 +65,7 @@ public final class NeoExpressService {
 
     runCommandAsync(ExpressCommand.CREATE,
         Arrays.asList("-c", String.valueOf(numberOfNodes),
-            "-a", String.valueOf(addressVersion), "-f", name),
+            "-a", String.valueOf(ADDRESS_VERSION), "-f", name),
         id,
         (output) -> {
           if (StringUtils.isNotEmpty(output.getStderr())) {
@@ -117,6 +118,30 @@ public final class NeoExpressService {
           } else {
             NeoNotifier.notifySuccess(neoProject,
                 NeoMessageBundle.message("notifications.wallet.created", name));
+          }
+        });
+  }
+
+  /**
+   * Transfer an asset.
+   *
+   * @param amount quantity of asset
+   * @param from   from account
+   * @param to     to account
+   * @param chain  selected chain
+   */
+  public void transferAsset(String amount, String asset, String from, String to, ChainLike chain) {
+    var id = UUID.randomUUID();
+    runCommandAsync(ExpressCommand.TRANSFER,
+        Arrays.asList(amount, asset, from, to, "-i", chain.toString()), id,
+        (output) -> {
+          if (StringUtils.isNotEmpty(output.getStderr())) {
+            // an error has occurred
+            NeoNotifier.notifyError(neoProject, NeoMessageBundle
+                .message("notifications.wallet.transfer.failed", output.getStderr()));
+          } else {
+            NeoNotifier.notifySuccess(neoProject,
+                NeoMessageBundle.message("notifications.wallet.transfer.done"));
           }
         });
   }
@@ -204,32 +229,29 @@ public final class NeoExpressService {
     commandLine.setWorkDirectory(neoProject.getBasePath());
     AtomicReference<ProcessOutput> processOutput = new AtomicReference<>();
 
-    // running in a new thread as a workaround to "Synchronous execution on EDT" exception
-    // need to analyze this more
-    Executors.newSingleThreadExecutor().execute(() -> {
-      try {
-        processOutput.set(new CapturingProcessHandler(commandLine).runProcess());
-        ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
-        var future = executor.scheduleAtFixedRate(() -> {
-          if (processOutput.get().isExitCodeSet()) {
-            // publish an event when command is no longer running
-            var publisher = bus.syncPublisher(ExpressCommandNotifier.RUNNER);
-            publisher.afterCompletion(id);
-          }
-        }, 0, 500, TimeUnit.MILLISECONDS);
+    try {
+      processOutput.set(new CapturingProcessHandler(commandLine).runProcess());
+      ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+      var future = executor.scheduleAtFixedRate(() -> {
+        if (processOutput.get().isExitCodeSet()) {
+          // publish an event when command is no longer running
+          var publisher = bus.syncPublisher(ExpressCommandNotifier.RUNNER);
+          publisher.afterCompletion(id);
+        }
+      }, 0, 500, TimeUnit.MILLISECONDS);
 
-        // cancel the scheduler and publish command completion event
-        neoProject.getMessageBus().connect().subscribe(ExpressCommandNotifier.RUNNER,
-            (completedProcess) -> {
-              if (completedProcess.equals(id)) {
-                future.cancel(true);
-                completionAction.perform(processOutput.get());
-              }
-            });
-      } catch (ExecutionException e) {
-        NeoNotifier.notifyError(neoProject, e.getMessage());
-      }
-    });
+      // cancel the scheduler and publish command completion event
+      neoProject.getMessageBus().connect().subscribe(ExpressCommandNotifier.RUNNER,
+          (completedProcess) -> {
+            if (completedProcess.equals(id)) {
+              future.cancel(true);
+              completionAction.perform(processOutput.get());
+            }
+          });
+    } catch (ExecutionException e) {
+      NeoNotifier.notifyError(neoProject, e.getMessage());
+    }
+
   }
 
   /**

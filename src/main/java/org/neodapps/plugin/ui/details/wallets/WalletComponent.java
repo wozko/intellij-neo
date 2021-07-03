@@ -6,6 +6,7 @@
 package org.neodapps.plugin.ui.details.wallets;
 
 import com.intellij.icons.AllIcons;
+import com.intellij.openapi.Disposable;
 import com.intellij.openapi.project.Project;
 import com.intellij.ui.JBColor;
 import com.intellij.ui.components.JBLabel;
@@ -25,10 +26,14 @@ import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.concurrent.ExecutionException;
 import javax.swing.BoxLayout;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
+import javax.swing.SwingWorker;
 import org.neodapps.plugin.NeoMessageBundle;
+import org.neodapps.plugin.NeoNotifier;
 import org.neodapps.plugin.blockchain.BlockChainType;
 import org.neodapps.plugin.blockchain.Chain;
 import org.neodapps.plugin.blockchain.ChainLike;
@@ -41,12 +46,14 @@ import org.neodapps.plugin.ui.ToolWindowButton;
 /**
  * Represents the component that shows wallet details.
  */
-public class WalletComponent extends Wrapper {
+public class WalletComponent extends Wrapper implements Disposable {
 
-  final Project project;
-  final ChainLike chain;
+  private final Project project;
+  private final ChainLike chain;
 
-  final Wrapper walletComponent;
+  private Wrapper walletWrapper;
+  private Wrapper toolBarWrapper;
+
 
   /**
    * Creates the wallet list component.
@@ -57,16 +64,76 @@ public class WalletComponent extends Wrapper {
   public WalletComponent(Project project, ChainLike chain) {
     this.project = project;
     this.chain = chain;
+    this.toolBarWrapper = new Wrapper();
+    this.walletWrapper = new Wrapper();
 
-    walletComponent = new Wrapper();
+    toolBarWrapper.setContent(new JPanel());
+    walletWrapper.setContent(new JPanel());
+
     var panel = JBUI.Panels.simplePanel();
-    panel.addToTop(getToolBar());
-    panel.addToCenter(walletComponent);
-    walletComponent.setContent(getWalletListComponent());
+    panel.addToTop(toolBarWrapper);
+    panel.addToCenter(walletWrapper);
+    setWalletLoading();
+
     setContent(panel);
+    loadWalletDetails(chain);
   }
 
-  private JComponent getToolBar() {
+  private void loadWalletDetails(ChainLike selected) {
+    var worker = new SwingWorker<List<NEP6Wallet>, Void>() {
+      @Override
+      protected List<NEP6Wallet> doInBackground() {
+        return project.getService(WalletService.class).getWallets(selected);
+      }
+
+      @Override
+      protected void done() {
+        List<NEP6Wallet> list;
+        try {
+          list = get();
+          toolBarWrapper.setContent(getToolBar(list));
+          loadBalances(list);
+
+        } catch (InterruptedException | ExecutionException e) {
+          NeoNotifier.notifyError(project, e.getMessage());
+        }
+      }
+    };
+    worker.execute();
+  }
+
+  private void loadBalances(List<NEP6Wallet> wallets) {
+    var worker = new SwingWorker<Map<NEP6Wallet, List<TokenBalance>>, Void>() {
+      @Override
+      protected Map<NEP6Wallet, List<TokenBalance>> doInBackground() {
+        return project.getService(BlockchainService.class).getTokenBalances(wallets, chain);
+      }
+
+      @Override
+      protected void done() {
+        Map<NEP6Wallet, List<TokenBalance>> balances;
+        try {
+          balances = get();
+          walletWrapper.setContent(getWalletListComponent(balances));
+        } catch (InterruptedException | ExecutionException e) {
+          NeoNotifier.notifyError(project, e.getMessage());
+        }
+      }
+    };
+    worker.execute();
+  }
+
+
+  private void setWalletLoading() {
+    var panel = new JPanel();
+    panel.setBorder(JBUI.Borders.empty(5));
+    panel.add(new JBLabel(NeoMessageBundle.message("toolwindow.loading")));
+    this.walletWrapper.setContent(panel);
+    this.toolBarWrapper.setContent(panel);
+  }
+
+
+  private JComponent getToolBar(List<NEP6Wallet> wallets) {
     // toolbar has two buttons
     var buttonPanel = JBUI.Panels.simplePanel();
     buttonPanel.setLayout(new FlowLayout());
@@ -83,6 +150,17 @@ public class WalletComponent extends Wrapper {
             popup.showPopup();
           });
       buttonPanel.add(createWalletButton);
+
+      var transferAssetButton = new ToolWindowButton(
+          NeoMessageBundle.message("toolwindow.transfer.wallet.asset"),
+          AllIcons.Nodes.Alias,
+          actionEvent -> {
+            var popup = new TransferAssetPopupComponent(project, (PrivateChain) chain, wallets);
+            popup.showPopup();
+          }
+      );
+
+      buttonPanel.add(transferAssetButton);
     } else {
       // users can import
       var importWalletButton = new ToolWindowButton(
@@ -102,22 +180,19 @@ public class WalletComponent extends Wrapper {
         new ToolWindowButton("",
             AllIcons.Javaee.UpdateRunningApplication,
             actionEvent -> {
-              walletComponent.setContent(getWalletListComponent());
+              setWalletLoading();
+              loadWalletDetails(chain);
             });
     buttonPanel.add(refreshButton);
     return buttonPanel;
   }
 
-  private JComponent getWalletListComponent() {
-    var wallets = project.getService(WalletService.class).getWallets(chain);
-    var balances = project.getService(BlockchainService.class)
-        .getTokenBalances(wallets, chain);
+  private JComponent getWalletListComponent(Map<NEP6Wallet, List<TokenBalance>> balances) {
     final var panel = new JPanel();
     panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-    
-    balances.forEach((wallet, tokenBalances) -> {
-      panel.add(getWalletComponent(wallet, balances.get(wallet)));
-    });
+
+    balances.forEach(
+        (wallet, tokenBalances) -> panel.add(getWalletComponent(wallet, balances.get(wallet))));
 
     return new JBScrollPane(panel);
   }
@@ -176,5 +251,11 @@ public class WalletComponent extends Wrapper {
     });
     field.setEditable(false);
     return field;
+  }
+
+  @Override
+  public void dispose() {
+    this.walletWrapper = null;
+    this.toolBarWrapper = null;
   }
 }

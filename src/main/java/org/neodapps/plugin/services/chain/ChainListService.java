@@ -62,6 +62,7 @@ public class ChainListService {
     // publish change node event so the ui get updated
     NodeChangeNotifier publisher =
         neoProject.getMessageBus().syncPublisher(NodeChangeNotifier.NODE_CHANGE);
+
     if (appliedChain == null) {
       publisher.nodeDeselected();
     } else {
