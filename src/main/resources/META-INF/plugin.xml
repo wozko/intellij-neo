@@ -1,7 +1,7 @@
 <idea-plugin>
     <id>org.neodapps.plugin</id>
-    <name>NeoIdea</name>
-    <vendor>neodapps.org</vendor>
+    <name>Neo</name>
+    <vendor>NeoDapps</vendor>
     <depends>com.intellij.modules.platform</depends>
     <depends>org.jetbrains.plugins.terminal</depends>
     <extensions defaultExtensionNs="com.intellij">

@@ -94,6 +94,10 @@ tasks {
         dependsOn("checkstyleMain")
     }
 
+    buildSearchableOptions {
+        enabled = false
+    }
+
     checkstyleMain {
         ignoreFailures = false
         maxWarnings = 0
