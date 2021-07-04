@@ -31,8 +31,10 @@ import org.neodapps.plugin.NeoNotifier;
 import org.neodapps.plugin.blockchain.BlockChainType;
 import org.neodapps.plugin.blockchain.Chain;
 import org.neodapps.plugin.blockchain.ChainLike;
+import org.neodapps.plugin.blockchain.ConsensusNodeLike;
 import org.neodapps.plugin.blockchain.NodeRunningState;
 import org.neodapps.plugin.blockchain.PrivateChain;
+import org.neodapps.plugin.blockchain.express.ExpressConsensusNode;
 
 /**
  * Represents block chain util services.
@@ -49,11 +51,11 @@ public class BlockchainService {
    *
    * @param chain chain to check the status
    */
-  public NodeRunningState checkNodeStatus(ChainLike chain) {
+  public NodeRunningState checkNodeStatus(ChainLike chain, ConsensusNodeLike node) {
     var state = NodeRunningState.NOT_RUNNING;
     if (chain != null) {
       if (chain.getType().equals(BlockChainType.PRIVATE)) {
-        state = getPrivateNodeRunningState((PrivateChain) chain);
+        state = getPrivateNodeRunningState((PrivateChain) chain, (ExpressConsensusNode) node);
       } else {
         state = getPublicNodeRunningState((Chain) chain);
       }
@@ -150,11 +152,12 @@ public class BlockchainService {
     }
   }
 
-  private NodeRunningState getPrivateNodeRunningState(PrivateChain chain) {
+  private NodeRunningState getPrivateNodeRunningState(PrivateChain chain,
+                                                      ExpressConsensusNode node) {
     long magicNumber;
     try {
       // check if running without magic number
-      var neow3j = Neow3j.build(new HttpService(chain.getSelectedItem().getUrl()));
+      var neow3j = Neow3j.build(new HttpService(node.getUrl()));
       neow3j.getBlockCount().send().getBlockCount();
 
       // get the magic number of running instance

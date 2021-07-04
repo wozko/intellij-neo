@@ -87,11 +87,11 @@ public final class NeoExpressService {
    *
    * @param chain chain to run.
    */
-  public void runPrivateNet(PrivateChain chain) {
+  public void runPrivateNet(PrivateChain chain, int nodeIndex) {
     var id = UUID.randomUUID();
     // -s, -d options ---> more future features
     runCommandInTerminalWindow(ExpressCommand.RUN,
-        Arrays.asList("-i", chain.toString(), String.valueOf(chain.getSelectedIndex())),
+        Arrays.asList("-i", chain.toString(), String.valueOf(nodeIndex)),
         NeoMessageBundle
             .message("terminal.tab.name", ExpressCommand.RUN.toString(),
                 String.format("%s (node %d)", chain, chain.getSelectedIndex())), id,

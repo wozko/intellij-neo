@@ -43,8 +43,8 @@ public class SelectedNodeStateComponent extends Wrapper implements Disposable {
    *
    * @param project intellij project
    */
-  public SelectedNodeStateComponent(Project project, ChainLike selected, NodeRunningState state,
-                                    boolean loading) {
+  public SelectedNodeStateComponent(Project project, ChainLike selected, int nodeIndex,
+                                    NodeRunningState state, boolean loading) {
     this.project = project;
     nodeNameLabel = new JBTextField();
     nodeNameLabel.setEditable(false);
@@ -74,7 +74,7 @@ public class SelectedNodeStateComponent extends Wrapper implements Disposable {
     } else if (selected == null) {
       setNotSelected();
     } else {
-      setRunningState(selected, state);
+      setRunningState(selected, nodeIndex, state);
     }
   }
 
@@ -95,17 +95,18 @@ public class SelectedNodeStateComponent extends Wrapper implements Disposable {
   /**
    * Sets the state of the node as running.
    */
-  private void setRunningState(ChainLike chain, NodeRunningState runningState) {
+  private void setRunningState(ChainLike chain, int nodeIndex,
+                               NodeRunningState runningState) {
     if (chain == null) {
       return;
     }
-    var nodeName = String.format("%s (%s)", chain, chain.getSelectedItem());
+    var nodeName = String.format("%s (%s)", chain, chain.getNodes().get(nodeIndex));
     var content = getRunningStateContent(nodeName, runningState);
     content.add(refreshStatusButton);
     // set run button 
     if (runningState.equals(NodeRunningState.NOT_RUNNING)
         && chain.getType().equals(BlockChainType.PRIVATE)) {
-      setAction(chain);
+      setAction(chain, nodeIndex);
       content.add(actionButton);
     }
     setContent(content);
@@ -115,7 +116,7 @@ public class SelectedNodeStateComponent extends Wrapper implements Disposable {
    * Show run action when a node is not running.
    * Only applies to not running private net.
    */
-  private void setAction(ChainLike chain) {
+  private void setAction(ChainLike chain, int nodeIndex) {
     // remove older listeners
     Arrays.stream(actionButton.getActionListeners())
         .forEach(l -> actionButton.removeActionListener(l));
@@ -123,7 +124,7 @@ public class SelectedNodeStateComponent extends Wrapper implements Disposable {
     actionButton.addActionListener(a -> {
       // do not run this in background
       project.getService(NeoExpressService.class)
-          .runPrivateNet((PrivateChain) chain);
+          .runPrivateNet((PrivateChain) chain, nodeIndex);
     });
 
     refreshStatusButton.addActionListener(

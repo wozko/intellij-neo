@@ -9,10 +9,14 @@ import com.intellij.openapi.Disposable;
 import com.intellij.openapi.project.Project;
 import com.intellij.ui.components.panels.Wrapper;
 import java.awt.BorderLayout;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
+import javax.swing.BoxLayout;
 import javax.swing.JPanel;
 import javax.swing.SwingWorker;
 import org.neodapps.plugin.NeoNotifier;
+import org.neodapps.plugin.blockchain.BlockChainType;
 import org.neodapps.plugin.blockchain.ChainLike;
 import org.neodapps.plugin.blockchain.NodeRunningState;
 import org.neodapps.plugin.services.chain.BlockchainService;
@@ -44,37 +48,71 @@ public class DetailsComponent extends JPanel implements Disposable {
         new NodeChangeNotifier() {
           @Override
           public void nodeSelected(ChainLike selectedChain) {
-            tabsWrapper.setContent(new JPanel());
-            statusWrapper.setContent(new SelectedNodeStateComponent(project, null, null, true));
             checkStatus(selectedChain);
           }
 
           @Override
           public void nodeDeselected() {
-            tabsWrapper.setContent(new JPanel());
-            statusWrapper.setContent(new SelectedNodeStateComponent(project, null, null, false));
+            checkStatus(null);
           }
         });
-    statusWrapper.setContent(new SelectedNodeStateComponent(project, null, null, false));
-    tabsWrapper.setContent(new JPanel());
+
+    checkStatus(null);
   }
 
   private void checkStatus(ChainLike selectedChain) {
-    var worker = new SwingWorker<NodeRunningState, Void>() {
+    if (selectedChain == null) {
+      statusWrapper.setContent(new SelectedNodeStateComponent(project, null, 0, null, false));
+      return;
+    }
+    tabsWrapper.setContent(new JPanel());
+    statusWrapper.setContent(new SelectedNodeStateComponent(project, null, 0, null, true));
+    var worker = new SwingWorker<List<NodeRunningState>, Void>() {
       @Override
-      protected NodeRunningState doInBackground() {
-        return project.getService(BlockchainService.class).checkNodeStatus(selectedChain);
+      protected List<NodeRunningState> doInBackground() {
+        var list = new ArrayList<NodeRunningState>();
+        var service = project.getService(BlockchainService.class);
+        if (selectedChain.getType().equals(BlockChainType.PRIVATE)) {
+          // if private chain, all nodes should be checked
+          selectedChain.getNodes()
+              .forEach(node -> list.add(service.checkNodeStatus(selectedChain, node)));
+        } else {
+          // if public check only the selected node
+          list.add(service.checkNodeStatus(selectedChain, selectedChain.getSelectedItem()));
+        }
+        return list;
       }
 
       @Override
       protected void done() {
-        NodeRunningState status;
+        List<NodeRunningState> statusList;
         try {
-          status = get();
-          statusWrapper
-              .setContent(new SelectedNodeStateComponent(project, selectedChain, status, false));
-          if (status.equals(NodeRunningState.RUNNING)) {
-            tabsWrapper.setContent(new TabsComponent(project, selectedChain));
+          statusList = get();
+          if (selectedChain.getType().equals(BlockChainType.PRIVATE)) {
+            // if private chain, all nodes should be checked
+            var nodes = selectedChain.getNodes();
+            var panel = new JPanel();
+            panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+            var running = true;
+            for (int i = 0; i < nodes.size(); i++) {
+              var node = nodes.get(i);
+              var status = statusList.get(i);
+              running = running && status.equals(NodeRunningState.RUNNING);
+              panel
+                  .add(new SelectedNodeStateComponent(project, selectedChain, i, status, false));
+            }
+            statusWrapper.setContent(panel);
+            if (running) {
+              tabsWrapper.setContent(new TabsComponent(project, selectedChain));
+            }
+          } else {
+            // if public only selected node
+            statusWrapper.setContent(new SelectedNodeStateComponent(project, selectedChain,
+                0, statusList.get(0), false));
+
+            if (statusList.get(0).equals(NodeRunningState.RUNNING)) {
+              tabsWrapper.setContent(new TabsComponent(project, selectedChain));
+            }
           }
         } catch (InterruptedException | ExecutionException e) {
           NeoNotifier.notifyError(project, e.getMessage());
@@ -83,6 +121,7 @@ public class DetailsComponent extends JPanel implements Disposable {
     };
     worker.execute();
   }
+
 
   @Override
   public void dispose() {
