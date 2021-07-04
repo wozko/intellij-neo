@@ -13,8 +13,8 @@ import com.intellij.ui.components.JBScrollPane;
 import com.intellij.ui.components.panels.Wrapper;
 import com.intellij.util.ui.JBUI;
 import io.neow3j.protocol.core.response.NeoGetContractState;
+import io.neow3j.wallet.nep6.NEP6Wallet;
 import java.awt.FlowLayout;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import javax.swing.BoxLayout;
@@ -25,6 +25,7 @@ import org.neodapps.plugin.NeoMessageBundle;
 import org.neodapps.plugin.NeoNotifier;
 import org.neodapps.plugin.blockchain.ChainLike;
 import org.neodapps.plugin.services.chain.ContractServices;
+import org.neodapps.plugin.services.chain.WalletService;
 import org.neodapps.plugin.ui.ToolWindowButton;
 
 /**
@@ -36,6 +37,7 @@ public class ContractsComponent extends Wrapper {
   final ChainLike chain;
 
   final Wrapper contractsComponent;
+  final Wrapper toolBarComponent;
 
   /**
    * Creates the component that shows contracts details.
@@ -47,15 +49,39 @@ public class ContractsComponent extends Wrapper {
     this.project = project;
     this.chain = chain;
 
-    contractsComponent = new Wrapper();
+    this.toolBarComponent = new Wrapper();
+    this.contractsComponent = new Wrapper();
 
     var panel = JBUI.Panels.simplePanel();
-    panel.addToTop(getToolBar(chain));
+    panel.addToTop(toolBarComponent);
     panel.addToCenter(contractsComponent);
 
+    toolBarComponent.setContent(getLoadingComponent());
     contractsComponent.setContent(getLoadingComponent());
     setContent(panel);
+
+    loadWalletsAndCreateToolbar();
     setContractList();
+  }
+
+  private void loadWalletsAndCreateToolbar() {
+    var worker = new SwingWorker<List<NEP6Wallet>, Void>() {
+      @Override
+      protected List<NEP6Wallet> doInBackground() throws Exception {
+        return project.getService(WalletService.class).getWallets(chain);
+      }
+
+      @Override
+      protected void done() {
+        try {
+          var wallets = get();
+          toolBarComponent.setContent(getToolBar(wallets));
+        } catch (InterruptedException | ExecutionException e) {
+          NeoNotifier.notifyError(project, e.getMessage());
+        }
+      }
+    };
+    worker.execute();
   }
 
   private void setContractList() {
@@ -90,7 +116,7 @@ public class ContractsComponent extends Wrapper {
     return panel;
   }
 
-  private JComponent getToolBar(ChainLike chain) {
+  private JComponent getToolBar(List<NEP6Wallet> wallets) {
     // toolbar has two buttons
     var buttonPanel = JBUI.Panels.simplePanel();
     buttonPanel.setLayout(new FlowLayout());
@@ -101,7 +127,7 @@ public class ContractsComponent extends Wrapper {
         new ToolWindowButton(
             NeoMessageBundle.message("contracts.deploy"),
             AllIcons.Modules.AddExcludedRoot, actionEvent -> {
-          var popup = new DeployContractPopup(project, new ArrayList<>());
+          var popup = new DeployContractPopup(project, chain, wallets);
           popup.showPopup();
         });
     buttonPanel.add(deployContractButton);

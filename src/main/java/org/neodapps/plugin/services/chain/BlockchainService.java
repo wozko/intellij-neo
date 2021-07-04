@@ -21,7 +21,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -69,7 +69,7 @@ public class BlockchainService {
    * @param walletToDeploy wallet used to deploy
    * @param chain          chain to deploy
    */
-  public void deployContract(Path nefPath, Path manifestPath, Wallet walletToDeploy,
+  public void deployContract(String nefPath, String manifestPath, NEP6Wallet walletToDeploy,
                              ChainLike chain) {
     var neow3j = project.getService(UtilService.class).getNeow3jInstance(chain);
     if (neow3j == null) {
@@ -77,18 +77,25 @@ public class BlockchainService {
       return;
     }
     try {
-      NefFile nefFile = NefFile.readFromFile(nefPath.toFile());
+      NefFile nefFile = NefFile.readFromFile(Paths.get(nefPath).toFile());
       ContractManifest manifest = ObjectMapperFactory
           .getObjectMapper()
-          .readValue(new FileInputStream(manifestPath.toFile()), ContractManifest.class);
+          .readValue(new FileInputStream(Paths.get(manifestPath).toFile()), ContractManifest.class);
+
+      var wallet = Wallet.fromNEP6Wallet(walletToDeploy);
+
+      // decrypt wallet before deployment
+      project.getService(WalletService.class).decryptWalletWithDefaultPassword(wallet);
 
       var response = new ContractManagement(neow3j)
           .deploy(nefFile, manifest)
-          .wallet(walletToDeploy)
-          .signers(Signer.global(walletToDeploy.getAccounts().get(0).getScriptHash()))
+          .wallet(wallet)
+          .signers(Signer.global(wallet.getAccounts().get(0).getScriptHash()))
           .sign()
           .send().getRawResponse();
       NeoNotifier.notifySuccess(project, response);
+      // encrypt wallet before deployment
+      project.getService(WalletService.class).encryptWalletWithDefaultPassword(wallet);
     } catch (Throwable e) {
       NeoNotifier.notifyError(project, e.getMessage());
     }

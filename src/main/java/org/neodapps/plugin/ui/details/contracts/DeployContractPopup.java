@@ -14,12 +14,15 @@ import com.intellij.ui.components.JBLabel;
 import com.intellij.ui.components.JBList;
 import com.intellij.util.ui.FormBuilder;
 import com.intellij.util.ui.JBUI;
-import io.neow3j.wallet.Wallet;
+import io.neow3j.wallet.nep6.NEP6Wallet;
 import java.util.List;
 import java.util.Objects;
 import javax.swing.JPanel;
 import javax.swing.ListSelectionModel;
+import javax.swing.SwingWorker;
 import org.neodapps.plugin.NeoMessageBundle;
+import org.neodapps.plugin.blockchain.ChainLike;
+import org.neodapps.plugin.services.chain.BlockchainService;
 import org.neodapps.plugin.ui.ToolWindowButton;
 
 /**
@@ -27,7 +30,8 @@ import org.neodapps.plugin.ui.ToolWindowButton;
  */
 public class DeployContractPopup implements Disposable {
   private final Project project;
-  private final List<Wallet> wallets;
+  private final ChainLike chain;
+  private final List<NEP6Wallet> wallets;
 
   private JBPopup popup;
   private TextFieldWithBrowseButton nefPath;
@@ -35,13 +39,13 @@ public class DeployContractPopup implements Disposable {
   private TextFieldWithBrowseButton manifestPath;
   private JBLabel manifestError;
   private ToolWindowButton actionButton;
-  private Wallet selectedWallet;
 
   /**
    * Creates the deploy contract popup.
    */
-  public DeployContractPopup(Project project, List<Wallet> wallets) {
+  public DeployContractPopup(Project project, ChainLike chain, List<NEP6Wallet> wallets) {
     this.project = project;
+    this.chain = chain;
     this.wallets = wallets;
   }
 
@@ -82,14 +86,11 @@ public class DeployContractPopup implements Disposable {
 
 
     // wallet list
-    JBList<Wallet> walletList = new JBList<>(wallets);
+    JBList<NEP6Wallet> walletList = new JBList<>(wallets);
     walletList.setCellRenderer((walletList1, wallet, i, b, b1) -> new JBLabel(wallet.getName()));
 
     // selection listener
     walletList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-    walletList.addListSelectionListener(e -> {
-      selectedWallet = walletList.getSelectedValue();
-    });
     builder
         .addLabeledComponent(NeoMessageBundle.message("contracts.deploy.select.wallet"), walletList,
             true);
@@ -107,7 +108,7 @@ public class DeployContractPopup implements Disposable {
                 manifestError.setVisible(true);
               } else {
                 closePopup();
-                // todo: deploy here
+                deployContract(nefPathVal, manifestPathVal, walletList.getSelectedValue());
               }
             });
     builder.addComponent(actionButton);
@@ -119,9 +120,7 @@ public class DeployContractPopup implements Disposable {
     } else {
       // set the default value
       walletList.setSelectedIndex(0);
-      selectedWallet = walletList.getSelectedValue();
     }
-
 
     JPanel content = builder.getPanel();
     content.setBorder(JBUI.Borders.empty(4, 10));
@@ -149,6 +148,18 @@ public class DeployContractPopup implements Disposable {
             .getComponent());
   }
 
+  private void deployContract(String nepPath, String manifestPath, NEP6Wallet wallet) {
+    var worker = new SwingWorker<Void, Void>() {
+      @Override
+      protected Void doInBackground() {
+        project.getService(BlockchainService.class)
+            .deployContract(nepPath, manifestPath, wallet, chain);
+        return null;
+      }
+    };
+    worker.execute();
+  }
+
   /**
    * Closes the popup.
    */
@@ -158,7 +169,6 @@ public class DeployContractPopup implements Disposable {
       popup = null;
     }
   }
-
 
   @Override
   public void dispose() {

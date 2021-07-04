@@ -8,6 +8,8 @@ package org.neodapps.plugin.services.chain;
 import com.intellij.openapi.project.Project;
 import io.neow3j.crypto.ECKeyPair;
 import io.neow3j.crypto.exceptions.CipherException;
+import io.neow3j.crypto.exceptions.NEP2InvalidFormat;
+import io.neow3j.crypto.exceptions.NEP2InvalidPassphrase;
 import io.neow3j.utils.Numeric;
 import io.neow3j.wallet.Account;
 import io.neow3j.wallet.Wallet;
@@ -35,11 +37,11 @@ public class WalletService {
 
   /*
    * Neow3j Nep6Wallet/Nep6Account requires private key to be encrypted.
-   * On a local development scenario using neo-express, it is not ideal to
+   * On a local/test development scenario, it is not ideal to
    * prompt for password. Hence we use a hardcoded password to encrypt the
-   * wallet. This only applies to neo-express wallets.
+   * wallet. This is strictly used in local/test environments.
    */
-  private static final String NEO_EXPRESS_WALLETS_PASSWORD = "NEO";
+  private static final String WALLET_DEFAULT_ENCRYPTION_PASSWORD = "NEO";
 
   public static final String GENESIS = "genesis";
 
@@ -82,16 +84,38 @@ public class WalletService {
     }
   }
 
-  private List<NEP6Wallet> getWalletForPrivateChain(PrivateChain chain) {
-    var wallets = new ArrayList<NEP6Wallet>();
+  /**
+   * Encrypts a neow3j wallet with a default password.
+   *
+   * @param wallet wallet to encrypt
+   */
+  public void encryptWalletWithDefaultPassword(Wallet wallet) {
     try {
-      for (ExpressWallet expressWallet : chain.getConfig().getWallets()) {
-        var wallet = getNeo3jWallet(expressWallet);
-        wallet.encryptAllAccounts(NEO_EXPRESS_WALLETS_PASSWORD);
-        wallets.add(wallet.toNEP6Wallet());
-      }
+      wallet.encryptAllAccounts(WALLET_DEFAULT_ENCRYPTION_PASSWORD);
     } catch (CipherException e) {
       NeoNotifier.notifyError(project, e.getMessage());
+    }
+  }
+
+  /**
+   * Decrypts a neow3j wallet with a default password.
+   *
+   * @param wallet wallet to encrypt
+   */
+  public void decryptWalletWithDefaultPassword(Wallet wallet) {
+    try {
+      wallet.decryptAllAccounts(WALLET_DEFAULT_ENCRYPTION_PASSWORD);
+    } catch (CipherException | NEP2InvalidPassphrase | NEP2InvalidFormat e) {
+      NeoNotifier.notifyError(project, e.getMessage());
+    }
+  }
+
+  private List<NEP6Wallet> getWalletForPrivateChain(PrivateChain chain) {
+    var wallets = new ArrayList<NEP6Wallet>();
+    for (ExpressWallet expressWallet : chain.getConfig().getWallets()) {
+      var wallet = getNeo3jWallet(expressWallet);
+      encryptWalletWithDefaultPassword(wallet);
+      wallets.add(wallet.toNEP6Wallet());
     }
     return wallets;
   }
