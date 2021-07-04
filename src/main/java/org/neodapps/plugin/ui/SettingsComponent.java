@@ -5,12 +5,10 @@
 
 package org.neodapps.plugin.ui;
 
-import com.intellij.openapi.Disposable;
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory;
 import com.intellij.openapi.ui.TextBrowseFolderListener;
 import com.intellij.openapi.ui.TextFieldWithBrowseButton;
 import com.intellij.ui.components.JBLabel;
-import com.intellij.ui.components.JBLoadingPanel;
 import com.intellij.util.ui.FormBuilder;
 import java.awt.BorderLayout;
 import javax.swing.JComponent;
@@ -19,23 +17,28 @@ import org.jetbrains.annotations.NotNull;
 import org.neodapps.plugin.NeoMessageBundle;
 
 /**
- * Supports creating and managing a {@link JPanel} for the Settings Dialog.
+ * Supports creating a component for the Settings Dialog.
  */
-public class SettingsComponent implements Disposable {
-  private JBLoadingPanel settingsPanel;
-  private TextFieldWithBrowseButton dotNetRoot;
-  private TextFieldWithBrowseButton neoExpressExecutablePath;
+public class SettingsComponent {
+  private final JPanel settingsPanel;
+  private final TextFieldWithBrowseButton dotNetRoot;
+  private final TextFieldWithBrowseButton neoExpressExecutablePath;
+
+  /**
+   * Creates settings component.
+   */
+  public SettingsComponent() {
+    settingsPanel = new JPanel(new BorderLayout());
+    dotNetRoot = new TextFieldWithBrowseButton();
+    neoExpressExecutablePath = new TextFieldWithBrowseButton();
+  }
 
   /**
    * Returns the setting component panel.
    *
-   * @return Returns a {@link JPanel} with fields to save plugin settings.
+   * @return Returns a component with fields to save plugin settings.
    */
   public JPanel getPanel() {
-    settingsPanel = new JBLoadingPanel(new BorderLayout(), this, 300);
-
-    // dot net location picker
-    dotNetRoot = new TextFieldWithBrowseButton();
     var chooseDirectoryDescriptor =
         FileChooserDescriptorFactory.createSingleFolderDescriptor();
     chooseDirectoryDescriptor.setShowFileSystemRoots(true);
@@ -43,7 +46,6 @@ public class SettingsComponent implements Disposable {
     dotNetRoot.addBrowseFolderListener(new TextBrowseFolderListener(chooseDirectoryDescriptor));
 
     // neo express binary location picker
-    neoExpressExecutablePath = new TextFieldWithBrowseButton();
     var chooseBinary =
         FileChooserDescriptorFactory.createSingleFileDescriptor();
     chooseBinary.setShowFileSystemRoots(true);
@@ -84,12 +86,5 @@ public class SettingsComponent implements Disposable {
 
   public void setNeoExpressExecutablePath(@NotNull String path) {
     neoExpressExecutablePath.setText(path);
-  }
-
-  @Override
-  public void dispose() {
-    settingsPanel = null;
-    dotNetRoot = null;
-    neoExpressExecutablePath = null;
   }
 }
