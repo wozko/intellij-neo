@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.jetbrains.annotations.NotNull;
+import org.neodapps.plugin.NeoMessageBundle;
 import org.neodapps.plugin.NeoNotifier;
 import org.neodapps.plugin.blockchain.BlockChainType;
 import org.neodapps.plugin.blockchain.Chain;
@@ -89,13 +90,14 @@ public class BlockchainService {
       // decrypt wallet before deployment
       project.getService(WalletService.class).decryptWalletWithDefaultPassword(wallet);
 
-      var response = new ContractManagement(neow3j)
+      new ContractManagement(neow3j)
           .deploy(nefFile, manifest)
           .wallet(wallet)
           .signers(Signer.global(wallet.getAccounts().get(0).getScriptHash()))
           .sign()
-          .send().getRawResponse();
-      NeoNotifier.notifySuccess(project, response);
+          .send();
+      NeoNotifier.notifySuccess(project,
+          NeoMessageBundle.message("contracts.deploy.success", manifest.getName()));
       // encrypt wallet before deployment
       project.getService(WalletService.class).encryptWalletWithDefaultPassword(wallet);
     } catch (Throwable e) {

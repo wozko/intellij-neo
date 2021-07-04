@@ -57,7 +57,8 @@ public class InvokeForm extends Wrapper implements Disposable {
     if (!list.isEmpty()) {
       list.setSelectedIndex(0);
     }
-    builder.addLabeledComponent(new JBLabel(NeoMessageBundle.message("contracts.invoke.operation")),
+    builder.addLabeledComponent(
+        new JBLabel(NeoMessageBundle.message("contracts.invoke.file.operation")),
         list, true);
 
     // arguments

@@ -61,11 +61,11 @@ public class DetailsComponent extends JPanel implements Disposable {
   }
 
   private void checkStatus(ChainLike selectedChain) {
+    tabsWrapper.setContent(new JPanel());
     if (selectedChain == null) {
       statusWrapper.setContent(new SelectedNodeStateComponent(project, null, 0, null, false));
       return;
     }
-    tabsWrapper.setContent(new JPanel());
     statusWrapper.setContent(new SelectedNodeStateComponent(project, null, 0, null, true));
     var worker = new SwingWorker<List<NodeRunningState>, Void>() {
       @Override
@@ -121,7 +121,6 @@ public class DetailsComponent extends JPanel implements Disposable {
     };
     worker.execute();
   }
-
 
   @Override
   public void dispose() {

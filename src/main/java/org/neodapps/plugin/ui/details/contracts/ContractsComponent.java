@@ -36,8 +36,8 @@ public class ContractsComponent extends Wrapper {
   final Project project;
   final ChainLike chain;
 
-  final Wrapper contractsComponent;
-  final Wrapper toolBarComponent;
+  final Wrapper contractsWrapper;
+  final Wrapper toolbarWrapper;
 
   /**
    * Creates the component that shows contracts details.
@@ -49,15 +49,15 @@ public class ContractsComponent extends Wrapper {
     this.project = project;
     this.chain = chain;
 
-    this.toolBarComponent = new Wrapper();
-    this.contractsComponent = new Wrapper();
+    this.toolbarWrapper = new Wrapper();
+    this.contractsWrapper = new Wrapper();
 
     var panel = JBUI.Panels.simplePanel();
-    panel.addToTop(toolBarComponent);
-    panel.addToCenter(contractsComponent);
+    panel.addToTop(toolbarWrapper);
+    panel.addToCenter(contractsWrapper);
 
-    toolBarComponent.setContent(getLoadingComponent());
-    contractsComponent.setContent(getLoadingComponent());
+    toolbarWrapper.setContent(getLoadingComponent());
+    contractsWrapper.setContent(getLoadingComponent());
     setContent(panel);
 
     loadWalletsAndCreateToolbar();
@@ -75,7 +75,7 @@ public class ContractsComponent extends Wrapper {
       protected void done() {
         try {
           var wallets = get();
-          toolBarComponent.setContent(getToolBar(wallets));
+          toolbarWrapper.setContent(getToolBar(wallets));
         } catch (InterruptedException | ExecutionException e) {
           NeoNotifier.notifyError(project, e.getMessage());
         }
@@ -100,7 +100,7 @@ public class ContractsComponent extends Wrapper {
 
           contracts.forEach(contractState -> panel.add(getContractComponent(contractState)));
 
-          contractsComponent.setContent(new JBScrollPane(panel));
+          contractsWrapper.setContent(new JBScrollPane(panel));
         } catch (InterruptedException | ExecutionException e) {
           NeoNotifier.notifyError(project, e.getMessage());
         }
@@ -132,6 +132,17 @@ public class ContractsComponent extends Wrapper {
         });
     buttonPanel.add(deployContractButton);
 
+    // refresh
+    var refreshButton =
+        new ToolWindowButton("",
+            AllIcons.Javaee.UpdateRunningApplication,
+            actionEvent -> {
+              toolbarWrapper.setContent(getLoadingComponent());
+              contractsWrapper.setContent(getLoadingComponent());
+              loadWalletsAndCreateToolbar();
+              setContractList();
+            });
+    buttonPanel.add(refreshButton);
     return buttonPanel;
   }
 
