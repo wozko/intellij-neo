@@ -6,7 +6,13 @@
 package org.neodapps.plugin.ui.details.contracts;
 
 import com.intellij.icons.AllIcons;
+import com.intellij.openapi.Disposable;
+import com.intellij.openapi.fileChooser.FileChooser;
+import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.util.Pair;
+import com.intellij.openapi.vfs.LocalFileSystem;
+import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.ui.JBColor;
 import com.intellij.ui.components.JBLabel;
 import com.intellij.ui.components.JBScrollPane;
@@ -15,29 +21,34 @@ import com.intellij.util.ui.JBUI;
 import io.neow3j.protocol.core.response.NeoGetContractState;
 import io.neow3j.wallet.nep6.NEP6Wallet;
 import java.awt.FlowLayout;
+import java.io.IOException;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import javax.swing.BoxLayout;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
 import javax.swing.SwingWorker;
+import javax.swing.border.CompoundBorder;
 import org.neodapps.plugin.NeoMessageBundle;
 import org.neodapps.plugin.NeoNotifier;
 import org.neodapps.plugin.blockchain.ChainLike;
 import org.neodapps.plugin.services.chain.ContractServices;
+import org.neodapps.plugin.services.chain.InvokeFile;
 import org.neodapps.plugin.services.chain.WalletService;
 import org.neodapps.plugin.ui.ToolWindowButton;
 
 /**
  * Represents the component that shows contracts details.
  */
-public class ContractsComponent extends Wrapper {
+public class ContractsComponent extends Wrapper implements Disposable {
 
   final Project project;
   final ChainLike chain;
 
-  final Wrapper contractsWrapper;
-  final Wrapper toolbarWrapper;
+  Wrapper contractsWrapper;
+  Wrapper toolbarWrapper;
+  Wrapper invokeFileWrapper;
 
   /**
    * Creates the component that shows contracts details.
@@ -51,62 +62,55 @@ public class ContractsComponent extends Wrapper {
 
     this.toolbarWrapper = new Wrapper();
     this.contractsWrapper = new Wrapper();
+    this.invokeFileWrapper = new Wrapper();
 
     var panel = JBUI.Panels.simplePanel();
     panel.addToTop(toolbarWrapper);
     panel.addToCenter(contractsWrapper);
+    panel.addToBottom(invokeFileWrapper);
 
     toolbarWrapper.setContent(getLoadingComponent());
     contractsWrapper.setContent(getLoadingComponent());
+    invokeFileWrapper.setContent(new JPanel());
     setContent(panel);
 
-    loadWalletsAndCreateToolbar();
-    setContractList();
+    loadAndSetContent();
   }
 
-  private void loadWalletsAndCreateToolbar() {
-    var worker = new SwingWorker<List<NEP6Wallet>, Void>() {
-      @Override
-      protected List<NEP6Wallet> doInBackground() throws Exception {
-        return project.getService(WalletService.class).getWallets(chain);
-      }
+  private void loadAndSetContent() {
+    var worker =
+        new SwingWorker<Pair<List<NEP6Wallet>, List<NeoGetContractState.ContractState>>, Void>() {
+          @Override
+          protected Pair<List<NEP6Wallet>,
+              List<NeoGetContractState.ContractState>> doInBackground() {
+            return new Pair<>(project.getService(WalletService.class).getWallets(chain),
+                project.getService(ContractServices.class).getContracts(chain));
+          }
 
-      @Override
-      protected void done() {
-        try {
-          var wallets = get();
-          toolbarWrapper.setContent(getToolBar(wallets));
-        } catch (InterruptedException | ExecutionException e) {
-          NeoNotifier.notifyError(project, e.getMessage());
-        }
-      }
-    };
+          @Override
+          protected void done() {
+            try {
+              var pair = get();
+              var wallets = pair.getFirst();
+              var contracts = pair.getSecond();
+
+              toolbarWrapper.setContent(getToolBar(wallets, contracts));
+              contractsWrapper.setContent(getContractContent(contracts));
+            } catch (InterruptedException | ExecutionException e) {
+              NeoNotifier.notifyError(project, e.getMessage());
+            }
+          }
+        };
     worker.execute();
   }
 
-  private void setContractList() {
-    var worker = new SwingWorker<List<NeoGetContractState.ContractState>, Void>() {
-      @Override
-      protected List<NeoGetContractState.ContractState> doInBackground() {
-        return project.getService(ContractServices.class).getContracts(chain);
-      }
+  private JComponent getContractContent(List<NeoGetContractState.ContractState> contracts) {
+    final var panel = new JPanel();
+    panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
 
-      @Override
-      protected void done() {
-        try {
-          var contracts = get();
-          final var panel = new JPanel();
-          panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+    contracts.forEach(contractState -> panel.add(getContractComponent(contractState)));
 
-          contracts.forEach(contractState -> panel.add(getContractComponent(contractState)));
-
-          contractsWrapper.setContent(new JBScrollPane(panel));
-        } catch (InterruptedException | ExecutionException e) {
-          NeoNotifier.notifyError(project, e.getMessage());
-        }
-      }
-    };
-    worker.execute();
+    return new JBScrollPane(panel);
   }
 
   private JComponent getLoadingComponent() {
@@ -116,7 +120,8 @@ public class ContractsComponent extends Wrapper {
     return panel;
   }
 
-  private JComponent getToolBar(List<NEP6Wallet> wallets) {
+  private JComponent getToolBar(List<NEP6Wallet> wallets,
+                                List<NeoGetContractState.ContractState> contracts) {
     // toolbar has two buttons
     var buttonPanel = JBUI.Panels.simplePanel();
     buttonPanel.setLayout(new FlowLayout());
@@ -139,21 +144,70 @@ public class ContractsComponent extends Wrapper {
             actionEvent -> {
               toolbarWrapper.setContent(getLoadingComponent());
               contractsWrapper.setContent(getLoadingComponent());
-              loadWalletsAndCreateToolbar();
-              setContractList();
+              loadAndSetContent();
             });
     buttonPanel.add(refreshButton);
+
+    // open invoke file
+    var openInvokeFile =
+        new ToolWindowButton(
+            NeoMessageBundle.message("contracts.invoke"),
+            AllIcons.Actions.Lightning, actionEvent -> {
+          var chooseJson =
+              FileChooserDescriptorFactory.createSingleFileDescriptor("json");
+          chooseJson.setRoots(
+              LocalFileSystem.getInstance()
+                  .findFileByPath(Objects.requireNonNull(project.getBasePath())));
+          var file = FileChooser.chooseFile(chooseJson, project, null);
+          openInvokeFile(file, wallets, contracts);
+        });
+    buttonPanel.add(openInvokeFile);
+
     return buttonPanel;
   }
 
   private JComponent getContractComponent(NeoGetContractState.ContractState contractState) {
     final var panel = new JPanel();
     panel.setBorder(
-        JBUI.Borders.compound(JBUI.Borders.customLine(JBColor.border()), JBUI.Borders.empty(5, 2)));
+        new CompoundBorder(JBUI.Borders.customLine(JBColor.border()), JBUI.Borders.empty(5, 2)));
 
     var manifest = contractState.getManifest();
     panel.add(new JBLabel(manifest.getName()));
 
     return panel;
+  }
+
+  private void openInvokeFile(VirtualFile file, List<NEP6Wallet> wallets,
+                              List<NeoGetContractState.ContractState> contracts) {
+    var worker = new SwingWorker<InvokeFile, Void>() {
+      @Override
+      protected InvokeFile doInBackground() {
+        InvokeFile invokeFile = null;
+        try {
+          invokeFile = new InvokeFile(file.toNioPath());
+        } catch (IOException e) {
+          NeoNotifier.notifyError(project, e.getMessage());
+        }
+        return invokeFile;
+      }
+
+      @Override
+      protected void done() {
+        try {
+          var invokeFile = get();
+          invokeFileWrapper
+              .setContent(new InvokeFileComponent(project, invokeFile, wallets, contracts));
+        } catch (InterruptedException | ExecutionException e) {
+          NeoNotifier.notifyError(project, e.getMessage());
+        }
+      }
+    };
+    worker.execute();
+  }
+
+  @Override
+  public void dispose() {
+    contractsWrapper = null;
+    toolbarWrapper = null;
   }
 }

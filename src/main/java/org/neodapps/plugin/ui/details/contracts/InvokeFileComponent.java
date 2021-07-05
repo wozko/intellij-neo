@@ -13,12 +13,20 @@ import com.intellij.ui.components.JBTextField;
 import com.intellij.ui.components.panels.Wrapper;
 import com.intellij.util.ui.FormBuilder;
 import com.intellij.util.ui.JBUI;
+import io.neow3j.protocol.core.response.ContractManifest;
+import io.neow3j.protocol.core.response.NeoGetContractState;
+import io.neow3j.wallet.nep6.NEP6Wallet;
 import java.awt.FlowLayout;
+import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 import javax.swing.BoxLayout;
 import javax.swing.JPanel;
+import javax.swing.SwingWorker;
 import org.neodapps.plugin.NeoMessageBundle;
+import org.neodapps.plugin.NeoNotifier;
 import org.neodapps.plugin.services.chain.InvokeFile;
 import org.neodapps.plugin.services.chain.InvokeFileItem;
 import org.neodapps.plugin.ui.ToolWindowButton;
@@ -29,29 +37,98 @@ import org.neodapps.plugin.ui.ToolWindowButton;
 public class InvokeFileComponent extends Wrapper implements Disposable {
   private final Project project;
   private final InvokeFile invokeFile;
+  private final List<NEP6Wallet> wallets;
+  private final List<NeoGetContractState.ContractState> contracts;
 
+  private Wrapper itemListWrapper;
   private JPanel itemListPanel;
   private Map<String, JPanel> invokeItemComponentMap;
 
   /**
    * Creates the component that shows an invoke file.
    *
-   * @param project        intellij project
-   * @param invokeFilePath path to invoke file
+   * @param project    intellij project
+   * @param invokeFile invoke file representation
    */
-  public InvokeFileComponent(Project project, String invokeFilePath) {
+  public InvokeFileComponent(Project project, InvokeFile invokeFile,
+                             List<NEP6Wallet> wallets,
+                             List<NeoGetContractState.ContractState> contractList) {
     this.project = project;
-    this.invokeFile = new InvokeFile(invokeFilePath);
-
-    this.itemListPanel = new JPanel();
-    this.itemListPanel.setLayout(new BoxLayout(this.itemListPanel, BoxLayout.Y_AXIS));
+    this.invokeFile = invokeFile;
+    this.wallets = wallets;
+    this.contracts = contractList;
 
     this.invokeItemComponentMap = new HashMap<>();
-    setComponent();
+    setContent(itemListWrapper);
+
+    this.itemListWrapper = new Wrapper();
+    itemListWrapper.setContent(getLoadingComponent());
+    verifyInvokeFileAndSetComponent();
   }
 
-  private void setComponent() {
-    for (InvokeFileItem item : invokeFile.getItems()) {
+  private void verifyInvokeFileAndSetComponent() {
+    var worker = new SwingWorker<Boolean, Void>() {
+      @Override
+      protected Boolean doInBackground() {
+        List<InvokeFileItem> items;
+        try {
+          items = invokeFile.getItems();
+        } catch (IOException e) {
+          NeoNotifier.notifyError(project, e.getMessage());
+          return false;
+        }
+
+        // verify contract and method names with deployed contract
+        for (InvokeFileItem item : items) {
+          NeoGetContractState.ContractState matchingContract = null;
+          for (NeoGetContractState.ContractState contract : contracts) {
+            if (item.getContract().equals(contract.getManifest().getName())) {
+              matchingContract = contract;
+              break;
+            }
+          }
+          if (matchingContract == null) {
+            NeoNotifier.notifyError(project, NeoMessageBundle
+                .message("contracts.invoke.file.contract.not.found", item.getContract()));
+            return false;
+          }
+
+          var matchingMethodFound =
+              matchingContract.getManifest().getAbi().getMethods().stream().map(
+                  ContractManifest.ContractABI.ContractMethod::getName)
+                  .anyMatch(m -> m.equals(item.getOperation()));
+
+          if (!matchingMethodFound) {
+            NeoNotifier.notifyError(project, NeoMessageBundle
+                .message("contracts.invoke.file.contract.method.not.found", item.getOperation(),
+                    matchingContract.getManifest().getName()));
+            return false;
+          }
+        }
+        return true;
+      }
+
+      @Override
+      protected void done() {
+        boolean isVerified;
+        try {
+          isVerified = get();
+          if (isVerified) {
+            itemListWrapper.setContent(getInvokeItemListComponent(invokeFile.getItems()));
+          }
+        } catch (InterruptedException | ExecutionException | IOException e) {
+          NeoNotifier.notifyError(project, e.getMessage());
+        }
+      }
+    };
+    worker.execute();
+  }
+
+  private JPanel getInvokeItemListComponent(List<InvokeFileItem> items) {
+    itemListPanel = new JPanel();
+    itemListPanel.setLayout(new BoxLayout(this.itemListPanel, BoxLayout.Y_AXIS));
+
+    for (InvokeFileItem item : items) {
       var itemPanel = new JPanel();
       invokeItemComponentMap.put(item.getId(), itemPanel);
       itemListPanel.add(itemPanel);
@@ -103,10 +180,19 @@ public class InvokeFileComponent extends Wrapper implements Disposable {
       builder.addComponent(actionsPanel);
       itemPanel.add(builder.getPanel());
     }
+    return itemListPanel;
+  }
+
+  private JPanel getLoadingComponent() {
+    var panel = new JPanel();
+    panel.setBorder(JBUI.Borders.empty(5));
+    panel.add(new JBLabel(NeoMessageBundle.message("toolwindow.loading")));
+    return panel;
   }
 
   @Override
   public void dispose() {
+    this.itemListWrapper = null;
     this.itemListPanel = null;
     this.invokeItemComponentMap = null;
   }

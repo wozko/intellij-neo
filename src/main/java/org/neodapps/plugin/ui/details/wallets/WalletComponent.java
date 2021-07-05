@@ -32,6 +32,7 @@ import javax.swing.BoxLayout;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
 import javax.swing.SwingWorker;
+import javax.swing.border.CompoundBorder;
 import org.neodapps.plugin.NeoMessageBundle;
 import org.neodapps.plugin.NeoNotifier;
 import org.neodapps.plugin.blockchain.BlockChainType;
@@ -201,7 +202,7 @@ public class WalletComponent extends Wrapper implements Disposable {
     var panel = new JPanel(new GridBagLayout());
     final var gbc = new GridBagConstraints();
     panel.setBorder(
-        JBUI.Borders.compound(JBUI.Borders.customLine(JBColor.border()), JBUI.Borders.empty(5, 2)));
+        new CompoundBorder(JBUI.Borders.customLine(JBColor.border()), JBUI.Borders.empty(5, 2)));
 
     // name and address
     var namePanel = new JPanel(new FlowLayout(FlowLayout.CENTER));

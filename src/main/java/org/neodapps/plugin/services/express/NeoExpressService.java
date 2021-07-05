@@ -262,7 +262,8 @@ public final class NeoExpressService {
   private String getExecPath() {
     var path = SettingsState.getInstance().neoExpressLocation;
     if (StringUtils.isEmpty(path)) {
-      NeoNotifier.notifyError(neoProject, "notifications.settings.neo.path.not.set");
+      NeoNotifier.notifyError(neoProject,
+          NeoMessageBundle.message("notifications.settings.neo.path.not.set"));
       return null;
     }
     return path;
@@ -271,7 +272,8 @@ public final class NeoExpressService {
   private String getDotNetPath() {
     var path = SettingsState.getInstance().dotNetRoot;
     if (StringUtils.isEmpty(path)) {
-      NeoNotifier.notifyError(neoProject, "notifications.settings.net.path.not.set");
+      NeoNotifier.notifyError(neoProject,
+          NeoMessageBundle.message("notifications.settings.net.path.not.set"));
       return null;
     }
     return path;

@@ -30,7 +30,7 @@ public class ToolBarComponent extends Wrapper implements Disposable {
                           NodeActionComponent nodeActionComponent) {
 
     toolbar = new JPanel(new FlowLayout(FlowLayout.LEADING));
-    toolbar.setBorder(JBUI.Borders.customLineBottom(JBColor.border()));
+    toolbar.setBorder(JBUI.Borders.customLine(JBColor.border(), 0, 0, 1, 0));
     toolbar.add(nodePickerComponent);
     toolbar.add(nodeActionComponent);
     setContent(toolbar);

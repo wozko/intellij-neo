@@ -134,7 +134,7 @@ public class SelectedNodeStateComponent extends Wrapper implements Disposable {
 
   private JPanel getRunningStateContent(String nodeName, NodeRunningState runningState) {
     var statusPanel = new JPanel(new FlowLayout());
-    statusPanel.setBorder(JBUI.Borders.customLineBottom(JBColor.border()));
+    statusPanel.setBorder(JBUI.Borders.customLine(JBColor.border(), 0, 0, 1, 0));
     nodeNameLabel.setText(nodeName);
     nodeStatusLabel.setIcon(runningState.getIcon());
     nodeStatusLabel.setText(runningState.toString());
@@ -145,7 +145,7 @@ public class SelectedNodeStateComponent extends Wrapper implements Disposable {
 
   private JPanel getNotSelectedContent() {
     var statusPanel = new JPanel(new FlowLayout());
-    statusPanel.setBorder(JBUI.Borders.customLineBottom(JBColor.border()));
+    statusPanel.setBorder(JBUI.Borders.customLine(JBColor.border(), 0, 0, 1, 0));
     statusPanel.add(applyInstructions);
     return statusPanel;
   }
