@@ -151,30 +151,30 @@ public class BlockchainService {
    * @param parameters     method params
    * @param nep6Wallet     wallet to sign
    */
-  public String invokeContractMethod(ChainLike chain,
-                                     NeoGetContractState.ContractState contractState,
-                                     ContractManifest.ContractABI.ContractMethod methodToInvoke,
-                                     List<ContractParameter> parameters,
-                                     NEP6Wallet nep6Wallet) {
+  public void invokeContractMethod(ChainLike chain,
+                                   NeoGetContractState.ContractState contractState,
+                                   ContractManifest.ContractABI.ContractMethod methodToInvoke,
+                                   List<ContractParameter> parameters,
+                                   NEP6Wallet nep6Wallet) {
     var neow3j = project.getService(UtilService.class).getNeow3jInstance(chain);
     if (neow3j == null) {
       // notified, exiting
-      return null;
+      return;
     }
 
     var wallet = Wallet.fromNEP6Wallet(nep6Wallet);
     project.getService(WalletService.class).decryptWalletWithDefaultPassword(wallet);
 
     try {
-      return new SmartContract(contractState.getHash(), neow3j)
+      new SmartContract(contractState.getHash(), neow3j)
           .invokeFunction(methodToInvoke.getName(), parameters.toArray(ContractParameter[]::new))
           .wallet(wallet)
           .signers(Signer.calledByEntry(wallet.getAccounts().get(0)))
           .sign()
           .send().getRawResponse();
+      NeoNotifier.notifySuccess(project, NeoMessageBundle.message("contracts.invoke.submitted"));
     } catch (Throwable throwable) {
       NeoNotifier.notifyError(project, throwable.getMessage());
-      return null;
     }
   }
 

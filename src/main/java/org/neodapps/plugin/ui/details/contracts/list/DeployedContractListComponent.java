@@ -13,7 +13,6 @@ import com.intellij.ui.components.JBList;
 import com.intellij.ui.components.JBTextField;
 import com.intellij.ui.components.panels.Wrapper;
 import com.intellij.util.ui.FormBuilder;
-import com.intellij.util.ui.JBFont;
 import com.intellij.util.ui.JBUI;
 import io.neow3j.protocol.core.response.ContractManifest;
 import io.neow3j.protocol.core.response.NeoGetContractState;
@@ -55,7 +54,6 @@ public class DeployedContractListComponent extends Wrapper implements Disposable
 
     var title = new JBLabel(NeoMessageBundle.message("contracts.deployed"));
     title.setBorder(JBUI.Borders.empty(3, 2));
-    title.setFont(JBFont.small());
     panel.addToTop(title);
 
     var contractList = new JBList<>(contracts);

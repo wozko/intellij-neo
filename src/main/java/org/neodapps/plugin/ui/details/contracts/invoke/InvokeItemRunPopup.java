@@ -16,13 +16,11 @@ import io.neow3j.types.ContractParameter;
 import io.neow3j.wallet.nep6.NEP6Wallet;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.ExecutionException;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
 import javax.swing.ListSelectionModel;
 import javax.swing.SwingWorker;
 import org.neodapps.plugin.NeoMessageBundle;
-import org.neodapps.plugin.NeoNotifier;
 import org.neodapps.plugin.blockchain.ChainLike;
 import org.neodapps.plugin.services.chain.BlockchainService;
 import org.neodapps.plugin.ui.ToolWindowButton;
@@ -114,22 +112,13 @@ public class InvokeItemRunPopup implements Disposable {
   }
 
   private void runSteps(NEP6Wallet wallet) {
-    var worker = new SwingWorker<String, Void>() {
+    var worker = new SwingWorker<Void, Void>() {
 
       @Override
-      protected String doInBackground() {
-        return project.getService(BlockchainService.class)
+      protected Void doInBackground() {
+        project.getService(BlockchainService.class)
             .invokeContractMethod(chain, contractState, method, parameters, wallet);
-      }
-
-      @Override
-      protected void done() {
-        try {
-          var rawResponse = get();
-          var size = rawResponse.length();
-        } catch (InterruptedException | ExecutionException e) {
-          NeoNotifier.notifyError(project, e.getMessage());
-        }
+        return null;
       }
     };
 

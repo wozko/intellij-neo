@@ -9,7 +9,6 @@ import com.intellij.icons.AllIcons;
 import com.intellij.openapi.Disposable;
 import com.intellij.openapi.project.Project;
 import com.intellij.ui.JBColor;
-import com.intellij.ui.JBSplitter;
 import com.intellij.ui.components.JBLabel;
 import com.intellij.ui.components.JBTextField;
 import com.intellij.ui.components.panels.Wrapper;
@@ -42,9 +41,8 @@ public class InvokeFileComponent extends Wrapper implements Disposable {
   private final List<NEP6Wallet> wallets;
   private final List<NeoGetContractState.ContractState> contracts;
 
-  private JBSplitter mainPanel;
+  private Wrapper mainPanel;
   private Wrapper itemListWrapper;
-  private Wrapper transactionsWrapper;
   private JPanel itemListPanel;
 
   private ToolWindowButton saveButton;
@@ -76,13 +74,8 @@ public class InvokeFileComponent extends Wrapper implements Disposable {
     this.itemListPanel = new JPanel();
     itemListPanel.setLayout(new BoxLayout(itemListPanel, BoxLayout.Y_AXIS));
 
-    this.transactionsWrapper = new Wrapper();
-    this.transactionsWrapper.setBorder(JBUI.Borders.customLine(JBColor.border()));
-    this.transactionsWrapper.setContent(new JPanel());
-
-    this.mainPanel = new JBSplitter(0.7f);
-    this.mainPanel.setFirstComponent(this.itemListWrapper);
-    this.mainPanel.setSecondComponent(this.transactionsWrapper);
+    this.mainPanel = new Wrapper();
+    this.mainPanel.setContent(this.itemListWrapper);
     setContent(this.mainPanel);
     setItems();
   }
@@ -220,7 +213,6 @@ public class InvokeFileComponent extends Wrapper implements Disposable {
   public void dispose() {
     this.mainPanel = null;
     this.itemListWrapper = null;
-    this.transactionsWrapper = null;
     this.itemListPanel = null;
     this.invokeItemComponentMap = null;
     this.saveButton = null;

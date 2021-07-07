@@ -85,7 +85,11 @@ public class TransactionsTableModel extends AbstractTableModel {
     }
   }
 
-  private String getOptionalName(String walletHash) {
+  public Map<String, String> getKnownAddress() {
+    return knownAddress;
+  }
+
+  public String getOptionalName(String walletHash) {
     return knownAddress.getOrDefault(walletHash, walletHash);
   }
 }

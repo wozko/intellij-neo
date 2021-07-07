@@ -9,7 +9,6 @@ import com.intellij.ui.components.JBLabel;
 import com.intellij.ui.components.JBTextField;
 import com.intellij.ui.components.panels.Wrapper;
 import com.intellij.util.ui.FormBuilder;
-import com.intellij.util.ui.JBFont;
 import com.intellij.util.ui.JBUI;
 import io.neow3j.protocol.core.response.ContractManifest;
 import io.neow3j.protocol.core.response.NeoGetContractState;
@@ -121,8 +120,6 @@ public class InvokeItemComponent extends Wrapper implements Disposable {
     this.contractNameComboBox = new ComboBox<>();
     this.contractNameError =
         new JBLabel(NeoMessageBundle.message("contracts.invoke.file.contract.not.found"));
-    contractNameError
-        .setFont(JBFont.small());
     contractNameError.setForeground(JBColor.red);
 
 
@@ -130,7 +127,6 @@ public class InvokeItemComponent extends Wrapper implements Disposable {
     this.operationNamesComboBox = new ComboBox<>();
     this.operationNameError =
         new JBLabel(NeoMessageBundle.message("contracts.invoke.file.contract.method.not.found"));
-    operationNameError.setFont(JBFont.small());
     operationNameError.setForeground(JBColor.red);
 
     // run step button

@@ -95,4 +95,12 @@ public class BlockInfoTable extends JBTable implements Disposable {
     unSubscribeFromBlocks();
   }
 
+  /**
+   * Set column filter to hide empty blocks.
+   *
+   * @param filterEmptyBlocks boolean condition to hide
+   */
+  public void filterEmptyBlocks(boolean filterEmptyBlocks) {
+    ((BlockInfoTableModel) getModel()).hideEmptyBlocks(filterEmptyBlocks);
+  }
 }

@@ -26,7 +26,9 @@ import org.neodapps.plugin.blockchain.ChainLike;
 public class BlockInfoTableModel extends AbstractTableModel implements Disposable {
   final Project project;
   final List<NeoBlock> blocks = new ArrayList<>();
+  final List<NeoBlock> nonEmptyBlocks = new ArrayList<>();
   final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd h:mm a");
+  private boolean hideEmptyBlocks;
   private final String[] columnNames = {
       BlockInfoTableColumn.INDEX.getName(), BlockInfoTableColumn.TIME.getName(),
       BlockInfoTableColumn.TRANSACTIONS.getName(), BlockInfoTableColumn.HASH.getName(),
@@ -45,7 +47,7 @@ public class BlockInfoTableModel extends AbstractTableModel implements Disposabl
 
   @Override
   public int getRowCount() {
-    return blocks.size();
+    return hideEmptyBlocks ? nonEmptyBlocks.size() : blocks.size();
   }
 
   @Override
@@ -60,19 +62,20 @@ public class BlockInfoTableModel extends AbstractTableModel implements Disposabl
 
   @Override
   public Object getValueAt(int rowIndex, int columnIndex) {
-    int index = blocks.size() - rowIndex - 1;
+    var blockList = hideEmptyBlocks ? nonEmptyBlocks : blocks;
+    int index = blockList.size() - rowIndex - 1;
 
     switch (columnIndex) {
       case 0:
-        return blocks.get(index).getIndex();
+        return blockList.get(index).getIndex();
       case 1:
-        return sdf.format(new Timestamp(blocks.get(index).getTime()).getTime());
+        return sdf.format(new Timestamp(blockList.get(index).getTime()).getTime());
       case 2:
-        return blocks.get(index).getTransactions().size();
+        return blockList.get(index).getTransactions().size();
       case 3:
-        return blocks.get(index).getHash();
+        return blockList.get(index).getHash();
       case 4:
-        return String.format("%d Bytes", blocks.get(index).getSize());
+        return String.format("%d Bytes", blockList.get(index).getSize());
       default:
         return null;
     }
@@ -93,7 +96,11 @@ public class BlockInfoTableModel extends AbstractTableModel implements Disposabl
             true);
 
     disposableRxJx = observable.subscribe(blockReq -> {
-      blocks.add(blockReq.getBlock());
+      var block = blockReq.getBlock();
+      blocks.add(block);
+      if (block.getTransactions().size() > 0) {
+        nonEmptyBlocks.add(block);
+      }
     });
   }
 
@@ -104,6 +111,10 @@ public class BlockInfoTableModel extends AbstractTableModel implements Disposabl
     if (disposableRxJx != null && !disposableRxJx.isDisposed()) {
       disposableRxJx.dispose();
     }
+  }
+
+  public void hideEmptyBlocks(boolean hide) {
+    this.hideEmptyBlocks = hide;
   }
 
   @Override

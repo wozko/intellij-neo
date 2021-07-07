@@ -2,11 +2,15 @@ package org.neodapps.plugin.ui.details;
 
 import com.intellij.openapi.Disposable;
 import com.intellij.openapi.project.Project;
+import com.intellij.ui.components.JBCheckBox;
 import com.intellij.ui.components.JBScrollPane;
 import com.intellij.ui.components.panels.Wrapper;
 import com.intellij.ui.tabs.JBTabs;
 import com.intellij.ui.tabs.TabInfo;
 import com.intellij.ui.tabs.impl.JBTabsImpl;
+import com.intellij.util.ui.JBUI;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
 import javax.swing.JComponent;
 import org.neodapps.plugin.NeoMessageBundle;
 import org.neodapps.plugin.blockchain.BlockChainType;
@@ -48,8 +52,21 @@ public class TabsComponent extends Wrapper implements Disposable {
   }
 
   private void addBlockTableComponent(ChainLike selectedChain) {
+    var panel = JBUI.Panels.simplePanel();
     var table = new BlockInfoTable(this.project, selectedChain);
-    TabInfo blockTab = new TabInfo(new JBScrollPane(table))
+    panel.addToCenter(new JBScrollPane(table));
+
+    var hideCheckbox = new JBCheckBox();
+    hideCheckbox.setText("Hide empty blocks");
+    hideCheckbox.addItemListener(new ItemListener() {
+      @Override
+      public void itemStateChanged(ItemEvent e) {
+        table.filterEmptyBlocks(e.getStateChange() == ItemEvent.SELECTED);
+      }
+    });
+    panel.addToTop(hideCheckbox);
+
+    TabInfo blockTab = new TabInfo(panel)
         .setText(NeoMessageBundle.message("toolwindow.tabs.blocks"));
     tabs.addTab(blockTab);
   }

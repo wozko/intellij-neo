@@ -27,7 +27,7 @@ public class TransactionsTable extends JTable {
    */
   public TransactionsTable(List<Transaction> transactions, ChainLike chain) {
     this.transactions = transactions;
-
+    setRowHeight(40);
     setModel(new TransactionsTableModel(transactions, chain));
     // set cursor
     setCursor(new Cursor(Cursor.HAND_CURSOR));
@@ -36,6 +36,7 @@ public class TransactionsTable extends JTable {
     setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 
     ListSelectionModel selectionModel = getSelectionModel();
+    var knownAddresses = ((TransactionsTableModel) getModel()).getKnownAddress();
     // show a popup with more details when a row is selected
     selectionModel.addListSelectionListener(e -> {
       int selectedRow = getSelectedRow();
@@ -45,7 +46,9 @@ public class TransactionsTable extends JTable {
       if (selectedRow == -1) {
         return;
       }
-      System.out.println(selectedRow);
+      var popup =
+          new TransactionInfoPopup(knownAddresses, transactions.get(selectedRow));
+      popup.showPopup();
       // clear selection
       selectionModel.clearSelection();
     });
