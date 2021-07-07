@@ -11,6 +11,27 @@ This Neo plugin will accelerate your Neo development experience on intellij base
 - Deploy and invoke smart contracts
 - Explore blocks and transactions
 
+### Prerequisites
+
+This plugin requires .Net v5 (or higher) and neo-express to be installed. Please specify the path fot .Net root
+directory and neo express executable in <kbd>
+Settings/Preferences</kbd> > <kbd>Tools</kbd> > <kbd>Neo</kbd>
+
+### Usage Instructions
+
+Once enabled, you will be able to see a new tool window titled "Neo" in your IDE. All the functionalities will be
+carried using tool window.
+
+#### Creating a private net
+
+Click <kbd>+ Private Net</kbd> button and specify the number of nodes to create a new private net.
+
+#### Functionalities of the tabbed content
+
+- Blocks: Explore blocks and transactions info
+- Wallets: Create wallets and transfer assets between them
+- Contracts: View deployed contract, deploy new contracts and invoke contracts
+
 <!-- Plugin description end -->
 
 ## Installation
