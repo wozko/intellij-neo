@@ -9,6 +9,7 @@ import com.intellij.ui.tabs.TabInfo;
 import com.intellij.ui.tabs.impl.JBTabsImpl;
 import javax.swing.JComponent;
 import org.neodapps.plugin.NeoMessageBundle;
+import org.neodapps.plugin.blockchain.BlockChainType;
 import org.neodapps.plugin.blockchain.ChainLike;
 import org.neodapps.plugin.ui.details.blocks.BlockInfoTable;
 import org.neodapps.plugin.ui.details.contracts.ContractsComponent;
@@ -35,8 +36,14 @@ public class TabsComponent extends Wrapper implements Disposable {
   private JComponent getTabs(ChainLike chain) {
     tabs.removeAllTabs();
     addBlockTableComponent(chain);
-    addWalletComponent(chain);
-    addContractsComponent(chain);
+
+    // for now wallets and contracts tab only shown for private nets
+    // while it should work for testnet, it is not tested properly
+    if (chain.getType().equals(BlockChainType.PRIVATE)) {
+      addWalletComponent(chain);
+      addContractsComponent(chain);
+    }
+
     return tabs.getComponent();
   }
 

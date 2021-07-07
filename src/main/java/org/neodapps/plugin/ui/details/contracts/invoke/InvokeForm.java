@@ -1,4 +1,4 @@
-package org.neodapps.plugin.ui.details.contracts;
+package org.neodapps.plugin.ui.details.contracts.invoke;
 
 import com.intellij.openapi.Disposable;
 import com.intellij.openapi.project.Project;

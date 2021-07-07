@@ -15,7 +15,6 @@ import com.intellij.openapi.vfs.LocalFileSystem;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.ui.JBColor;
 import com.intellij.ui.components.JBLabel;
-import com.intellij.ui.components.JBScrollPane;
 import com.intellij.ui.components.panels.Wrapper;
 import com.intellij.util.ui.JBUI;
 import io.neow3j.protocol.core.response.NeoGetContractState;
@@ -25,11 +24,9 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
-import javax.swing.BoxLayout;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
 import javax.swing.SwingWorker;
-import javax.swing.border.CompoundBorder;
 import org.neodapps.plugin.NeoMessageBundle;
 import org.neodapps.plugin.NeoNotifier;
 import org.neodapps.plugin.blockchain.ChainLike;
@@ -37,6 +34,8 @@ import org.neodapps.plugin.services.chain.ContractServices;
 import org.neodapps.plugin.services.chain.InvokeFile;
 import org.neodapps.plugin.services.chain.WalletService;
 import org.neodapps.plugin.ui.ToolWindowButton;
+import org.neodapps.plugin.ui.details.contracts.invoke.InvokeFileComponent;
+import org.neodapps.plugin.ui.details.contracts.list.DeployedContractListComponent;
 
 /**
  * Represents the component that shows contracts details.
@@ -46,9 +45,8 @@ public class ContractsComponent extends Wrapper implements Disposable {
   final Project project;
   final ChainLike chain;
 
-  Wrapper contractsWrapper;
-  Wrapper toolbarWrapper;
-  Wrapper invokeFileWrapper;
+  private Wrapper toolbarWrapper;
+  private Wrapper mainPanel;
 
   /**
    * Creates the component that shows contracts details.
@@ -61,19 +59,15 @@ public class ContractsComponent extends Wrapper implements Disposable {
     this.chain = chain;
 
     this.toolbarWrapper = new Wrapper();
-    this.contractsWrapper = new Wrapper();
-    this.invokeFileWrapper = new Wrapper();
+    this.mainPanel = new Wrapper();
 
     var panel = JBUI.Panels.simplePanel();
     panel.addToTop(toolbarWrapper);
-    panel.addToCenter(contractsWrapper);
-    panel.addToBottom(invokeFileWrapper);
+    panel.addToCenter(mainPanel);
 
     toolbarWrapper.setContent(getLoadingComponent());
-    contractsWrapper.setContent(getLoadingComponent());
-    invokeFileWrapper.setContent(new JPanel());
+    mainPanel.setContent(getLoadingComponent());
     setContent(panel);
-
     loadAndSetContent();
   }
 
@@ -95,22 +89,13 @@ public class ContractsComponent extends Wrapper implements Disposable {
               var contracts = pair.getSecond();
 
               toolbarWrapper.setContent(getToolBar(wallets, contracts));
-              contractsWrapper.setContent(getContractContent(contracts));
+              mainPanel.setContent(new DeployedContractListComponent(contracts));
             } catch (InterruptedException | ExecutionException e) {
               NeoNotifier.notifyError(project, e.getMessage());
             }
           }
         };
     worker.execute();
-  }
-
-  private JComponent getContractContent(List<NeoGetContractState.ContractState> contracts) {
-    final var panel = new JPanel();
-    panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-
-    contracts.forEach(contractState -> panel.add(getContractComponent(contractState)));
-
-    return new JBScrollPane(panel);
   }
 
   private JComponent getLoadingComponent() {
@@ -143,7 +128,7 @@ public class ContractsComponent extends Wrapper implements Disposable {
             AllIcons.Javaee.UpdateRunningApplication,
             actionEvent -> {
               toolbarWrapper.setContent(getLoadingComponent());
-              contractsWrapper.setContent(getLoadingComponent());
+              mainPanel.setContent(getLoadingComponent());
               loadAndSetContent();
             });
     buttonPanel.add(refreshButton);
@@ -166,17 +151,6 @@ public class ContractsComponent extends Wrapper implements Disposable {
     return buttonPanel;
   }
 
-  private JComponent getContractComponent(NeoGetContractState.ContractState contractState) {
-    final var panel = new JPanel();
-    panel.setBorder(
-        new CompoundBorder(JBUI.Borders.customLine(JBColor.border()), JBUI.Borders.empty(5, 2)));
-
-    var manifest = contractState.getManifest();
-    panel.add(new JBLabel(manifest.getName()));
-
-    return panel;
-  }
-
   private void openInvokeFile(VirtualFile file, List<NEP6Wallet> wallets,
                               List<NeoGetContractState.ContractState> contracts) {
     var worker = new SwingWorker<InvokeFile, Void>() {
@@ -195,8 +169,8 @@ public class ContractsComponent extends Wrapper implements Disposable {
       protected void done() {
         try {
           var invokeFile = get();
-          invokeFileWrapper
-              .setContent(new InvokeFileComponent(project, invokeFile, wallets, contracts));
+          mainPanel
+              .setContent(new InvokeFileComponent(project, chain, invokeFile, wallets, contracts));
         } catch (InterruptedException | ExecutionException e) {
           NeoNotifier.notifyError(project, e.getMessage());
         }
@@ -207,7 +181,7 @@ public class ContractsComponent extends Wrapper implements Disposable {
 
   @Override
   public void dispose() {
-    contractsWrapper = null;
+    mainPanel = null;
     toolbarWrapper = null;
   }
 }

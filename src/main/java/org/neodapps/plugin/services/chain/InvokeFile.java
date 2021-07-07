@@ -7,13 +7,16 @@
 package org.neodapps.plugin.services.chain;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Arrays;
-import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -21,7 +24,7 @@ import org.jetbrains.annotations.NotNull;
  */
 public class InvokeFile {
 
-  private List<InvokeFileItem> items;
+  private Map<String, InvokeFileItem> items;
   private long lastModifiedDate;
   private final Path path;
 
@@ -35,7 +38,7 @@ public class InvokeFile {
    *
    * @return invoke item list read from file
    */
-  public List<InvokeFileItem> getItems() throws IOException {
+  public Map<String, InvokeFileItem> getItems() throws IOException {
     boolean update = this.items == null;
 
     // if not null, check if the file has updated since last modified
@@ -52,13 +55,43 @@ public class InvokeFile {
     // json to pojo
     if (update) {
       Gson gson = new Gson();
-      items = Arrays.asList(gson.fromJson(new FileReader(this.path.toFile()),
-          InvokeFileItem[].class));
+      items = Arrays.stream(gson.fromJson(new FileReader(this.path.toFile()),
+          InvokeFileItem[].class)).collect(Collectors.toMap(InvokeFileItem::getId, Function
+          .identity()));
     }
     return items;
   }
 
   public Path getPath() {
     return path;
+  }
+
+  /**
+   * Serialize the invoke file.
+   */
+  public void saveChanges() throws IOException {
+    if (items == null) {
+      return;
+    }
+    var data = new GsonBuilder().setPrettyPrinting().create().toJson(this.items.values());
+    Files.write(this.path, data.getBytes());
+  }
+
+  /**
+   * Adds an item to the invoke file.
+   *
+   * @param item item to be added.
+   */
+  public void addItem(InvokeFileItem item) {
+    items.put(item.getId(), item);
+  }
+
+  /**
+   * Removes an item from an invoke file.
+   *
+   * @param item item to be added.
+   */
+  public void removeItem(InvokeFileItem item) {
+    items.remove(item.getId());
   }
 }

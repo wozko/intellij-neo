@@ -2,6 +2,11 @@
 
 # intellij-neo Changelog
 
-## [Unreleased]
+## 0.1.0-beta
+
 ### Added
-- Initial scaffold created from [IntelliJ Platform Plugin Template](https://github.com/JetBrains/intellij-platform-plugin-template)
+
+- Create and mange private blockchain
+- Create wallets and transfer assets
+- Deploy contracts
+- Explore blocks

@@ -8,12 +8,15 @@ package org.neodapps.plugin.services.chain;
 import com.intellij.openapi.project.Project;
 import io.neow3j.contract.ContractManagement;
 import io.neow3j.contract.NefFile;
+import io.neow3j.contract.SmartContract;
 import io.neow3j.contract.Token;
 import io.neow3j.protocol.Neow3j;
 import io.neow3j.protocol.ObjectMapperFactory;
 import io.neow3j.protocol.core.response.ContractManifest;
+import io.neow3j.protocol.core.response.NeoGetContractState;
 import io.neow3j.protocol.http.HttpService;
 import io.neow3j.transaction.Signer;
+import io.neow3j.types.ContractParameter;
 import io.neow3j.types.Hash160;
 import io.neow3j.wallet.Wallet;
 import io.neow3j.wallet.nep6.NEP6Wallet;
@@ -139,6 +142,41 @@ public class BlockchainService {
     return result;
   }
 
+  /**
+   * Invokes a contract method.
+   *
+   * @param chain          selected chain
+   * @param contractState  contract to invoke
+   * @param methodToInvoke method to invoke
+   * @param parameters     method params
+   * @param nep6Wallet     wallet to sign
+   */
+  public String invokeContractMethod(ChainLike chain,
+                                     NeoGetContractState.ContractState contractState,
+                                     ContractManifest.ContractABI.ContractMethod methodToInvoke,
+                                     List<ContractParameter> parameters,
+                                     NEP6Wallet nep6Wallet) {
+    var neow3j = project.getService(UtilService.class).getNeow3jInstance(chain);
+    if (neow3j == null) {
+      // notified, exiting
+      return null;
+    }
+
+    var wallet = Wallet.fromNEP6Wallet(nep6Wallet);
+    project.getService(WalletService.class).decryptWalletWithDefaultPassword(wallet);
+
+    try {
+      return new SmartContract(contractState.getHash(), neow3j)
+          .invokeFunction(methodToInvoke.getName(), parameters.toArray(ContractParameter[]::new))
+          .wallet(wallet)
+          .signers(Signer.calledByEntry(wallet.getAccounts().get(0)))
+          .sign()
+          .send().getRawResponse();
+    } catch (Throwable throwable) {
+      NeoNotifier.notifyError(project, throwable.getMessage());
+      return null;
+    }
+  }
 
   private NodeRunningState getPublicNodeRunningState(Chain chain) {
     var neow3j = project.getService(UtilService.class).getNeow3jInstance(chain);

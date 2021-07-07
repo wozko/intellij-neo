@@ -7,6 +7,7 @@ package org.neodapps.plugin.services.chain;
 
 import com.google.gson.annotations.SerializedName;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -51,5 +52,34 @@ public class InvokeFileItem {
       id = UUID.randomUUID().toString();
     }
     return id;
+  }
+
+  public void setContract(String contract) {
+    this.contract = contract;
+  }
+
+  public void setOperation(String operation) {
+    this.operation = operation;
+  }
+
+  public void setArgs(List<Object> args) {
+    this.args = args;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (!(o instanceof InvokeFileItem)) {
+      return false;
+    }
+    InvokeFileItem that = (InvokeFileItem) o;
+    return id.equals(that.id);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(id);
   }
 }
