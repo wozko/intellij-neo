@@ -1,7 +1,7 @@
 # intellij-neo
 
-[![Version](https://img.shields.io/jetbrains/plugin/v/PLUGIN_ID.svg)](https://plugins.jetbrains.com/plugin/PLUGIN_ID)
-[![Downloads](https://img.shields.io/jetbrains/plugin/d/PLUGIN_ID.svg)](https://plugins.jetbrains.com/plugin/PLUGIN_ID)
+[![Version](https://img.shields.io/jetbrains/plugin/v/17195.svg)](https://plugins.jetbrains.com/plugin/17195)
+[![Downloads](https://img.shields.io/jetbrains/plugin/d/17195.svg)](https://plugins.jetbrains.com/plugin/17195)
 
 <!-- Plugin description -->
 This Neo plugin will accelerate your Neo development experience on intellij based IDEs.
