@@ -176,6 +176,7 @@ public class InvokeItemComponent extends Wrapper implements Disposable {
               operationNamesComboBox.addItem(method.getName());
             }
             operationNamesComboBox.setSelectedIndex(0);
+            selectedOperation = methods.get(0);
           }
         }
         item.setContract((String) contractNameComboBox.getSelectedItem());
