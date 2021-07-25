@@ -7,18 +7,14 @@ package org.neodapps.plugin.ui.details.blocks;
 
 import com.intellij.openapi.Disposable;
 import com.intellij.openapi.project.Project;
-import io.neow3j.protocol.Neow3j;
 import io.neow3j.protocol.core.response.NeoBlock;
-import io.neow3j.protocol.http.HttpService;
-import java.io.IOException;
-import java.math.BigInteger;
-import java.net.URISyntaxException;
+import io.neow3j.protocol.core.response.NeoGetBlock;
+import io.reactivex.Observable;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
 import javax.swing.table.AbstractTableModel;
-import org.neodapps.plugin.blockchain.ChainLike;
 
 /**
  * Represents the model of block table.
@@ -80,19 +76,9 @@ public class BlockInfoTableModel extends AbstractTableModel implements Disposabl
   /**
    * Subscribe table model to latest blocks.
    *
-   * @param selectedChain   chain to subscribe
    * @param hideEmptyBlocks filter empty blocks
-   * @throws URISyntaxException thrown when url is in an invalid format.
    */
-  public void subscribe(ChainLike selectedChain, Boolean hideEmptyBlocks)
-      throws URISyntaxException, IOException {
-    var neow3j =
-        Neow3j.build(new HttpService(selectedChain.getSelectedItem().getUrl()));
-    var blockCount = neow3j.getBlockCount().send().getBlockCount();
-    var observable = neow3j
-        .catchUpToLatestAndSubscribeToNewBlocksObservable(
-            new BigInteger("0").max(blockCount.subtract(new BigInteger("10"))),
-            true);
+  public void subscribe(Observable<NeoGetBlock> observable, Boolean hideEmptyBlocks) {
 
     disposableRxJx = observable.subscribe(blockReq -> {
       var block = blockReq.getBlock();

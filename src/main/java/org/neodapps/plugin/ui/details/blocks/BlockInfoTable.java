@@ -9,12 +9,14 @@ import com.intellij.openapi.Disposable;
 import com.intellij.openapi.project.Project;
 import com.intellij.ui.table.JBTable;
 import io.neow3j.protocol.core.response.NeoBlock;
+import io.neow3j.protocol.core.response.NeoGetBlock;
+import io.reactivex.Observable;
 import java.awt.Cursor;
-import java.io.IOException;
-import java.net.URISyntaxException;
 import javax.swing.ListSelectionModel;
+import javax.swing.SwingWorker;
 import org.neodapps.plugin.NeoNotifier;
 import org.neodapps.plugin.blockchain.ChainLike;
+import org.neodapps.plugin.services.chain.BlockchainService;
 import org.neodapps.plugin.topics.NodeChangeNotifier;
 
 /**
@@ -77,14 +79,31 @@ public class BlockInfoTable extends JBTable implements Disposable {
    * Subscribe to latest blocks.
    */
   public void subscribeToBlocks(ChainLike selectedChain, boolean hideEmptyBlocks) {
-    if (selectedChain == null) {
-      return;
-    }
-    try {
-      ((BlockInfoTableModel) getModel()).subscribe(selectedChain, hideEmptyBlocks);
-    } catch (URISyntaxException | IOException e) {
-      NeoNotifier.notifyError(project, e.getMessage());
-    }
+    var worker = new SwingWorker<Observable<NeoGetBlock>, Void>() {
+      @Override
+      protected Observable<NeoGetBlock> doInBackground() {
+        var service = project.getService(BlockchainService.class);
+        return service.subscribeToBlocks(selectedChain);
+      }
+
+      @Override
+      protected void done() {
+        Observable<NeoGetBlock> observable;
+        try {
+          observable = get();
+          if (observable == null) {
+            // notified, do nothing
+            return;
+          }
+          ((BlockInfoTableModel) getModel()).subscribe(observable, hideEmptyBlocks);
+
+        } catch (Exception e) {
+          NeoNotifier.notifyError(project, e.getMessage());
+        }
+      }
+    };
+
+    worker.execute();
   }
 
   public void unSubscribeFromBlocks() {

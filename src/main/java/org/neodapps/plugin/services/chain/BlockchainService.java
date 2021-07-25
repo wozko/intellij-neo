@@ -13,6 +13,7 @@ import io.neow3j.contract.Token;
 import io.neow3j.protocol.Neow3j;
 import io.neow3j.protocol.ObjectMapperFactory;
 import io.neow3j.protocol.core.response.ContractManifest;
+import io.neow3j.protocol.core.response.NeoGetBlock;
 import io.neow3j.protocol.core.response.NeoGetContractState;
 import io.neow3j.protocol.http.HttpService;
 import io.neow3j.transaction.Signer;
@@ -20,8 +21,10 @@ import io.neow3j.types.ContractParameter;
 import io.neow3j.types.Hash160;
 import io.neow3j.wallet.Wallet;
 import io.neow3j.wallet.nep6.NEP6Wallet;
+import io.reactivex.Observable;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.file.Paths;
@@ -177,6 +180,34 @@ public class BlockchainService {
       NeoNotifier.notifyError(project, throwable.getMessage());
     }
   }
+
+  /**
+   * Subscribes and listen to blocks.
+   *
+   * @param chainLike chain to subscribe
+   */
+  public Observable<NeoGetBlock> subscribeToBlocks(ChainLike chainLike) {
+    var neow3j = project.getService(UtilService.class).getNeow3jInstance(chainLike);
+    if (neow3j == null) {
+      // notified, exiting
+      return null;
+    }
+
+    BigInteger blockCount;
+    try {
+      blockCount = neow3j.getBlockCount().send().getBlockCount();
+    } catch (IOException e) {
+      NeoNotifier.notifyError(project, e.getMessage());
+      return null;
+    }
+
+    return neow3j
+        .catchUpToLatestAndSubscribeToNewBlocksObservable(
+            new BigInteger("0").max(blockCount.subtract(new BigInteger("10"))),
+            true);
+
+  }
+
 
   private NodeRunningState getPublicNodeRunningState(Chain chain) {
     var neow3j = project.getService(UtilService.class).getNeow3jInstance(chain);
