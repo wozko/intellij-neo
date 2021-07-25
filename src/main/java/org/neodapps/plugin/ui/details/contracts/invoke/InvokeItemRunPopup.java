@@ -12,6 +12,7 @@ import com.intellij.util.ui.FormBuilder;
 import com.intellij.util.ui.JBUI;
 import io.neow3j.protocol.core.response.ContractManifest;
 import io.neow3j.protocol.core.response.NeoGetContractState;
+import io.neow3j.protocol.core.response.NeoSendRawTransaction;
 import io.neow3j.types.ContractParameter;
 import io.neow3j.wallet.nep6.NEP6Wallet;
 import java.util.List;
@@ -21,6 +22,7 @@ import javax.swing.JPanel;
 import javax.swing.ListSelectionModel;
 import javax.swing.SwingWorker;
 import org.neodapps.plugin.NeoMessageBundle;
+import org.neodapps.plugin.NeoNotifier;
 import org.neodapps.plugin.blockchain.ChainLike;
 import org.neodapps.plugin.services.chain.BlockchainService;
 import org.neodapps.plugin.ui.ToolWindowButton;
@@ -112,13 +114,26 @@ public class InvokeItemRunPopup implements Disposable {
   }
 
   private void runSteps(NEP6Wallet wallet) {
-    var worker = new SwingWorker<Void, Void>() {
+    var worker = new SwingWorker<NeoSendRawTransaction.RawTransaction, Void>() {
 
       @Override
-      protected Void doInBackground() {
-        project.getService(BlockchainService.class)
+      protected NeoSendRawTransaction.RawTransaction doInBackground() {
+        return project.getService(BlockchainService.class)
             .invokeContractMethod(chain, contractState, method, parameters, wallet);
-        return null;
+      }
+
+      @Override
+      protected void done() {
+        NeoSendRawTransaction.RawTransaction transaction;
+        try {
+          transaction = get();
+          if (transaction != null) {
+            NeoNotifier.notifySuccess(project, NeoMessageBundle
+                .message("contracts.invoke.submitted", transaction.getHash().toString()));
+          }
+        } catch (Exception e) {
+          NeoNotifier.notifyError(project, e.getMessage());
+        }
       }
     };
 

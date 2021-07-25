@@ -15,6 +15,7 @@ import io.neow3j.protocol.ObjectMapperFactory;
 import io.neow3j.protocol.core.response.ContractManifest;
 import io.neow3j.protocol.core.response.NeoGetBlock;
 import io.neow3j.protocol.core.response.NeoGetContractState;
+import io.neow3j.protocol.core.response.NeoSendRawTransaction;
 import io.neow3j.protocol.http.HttpService;
 import io.neow3j.transaction.Signer;
 import io.neow3j.types.ContractParameter;
@@ -154,30 +155,28 @@ public class BlockchainService {
    * @param parameters     method params
    * @param nep6Wallet     wallet to sign
    */
-  public void invokeContractMethod(ChainLike chain,
-                                   NeoGetContractState.ContractState contractState,
-                                   ContractManifest.ContractABI.ContractMethod methodToInvoke,
-                                   List<ContractParameter> parameters,
-                                   NEP6Wallet nep6Wallet) {
+  public NeoSendRawTransaction.RawTransaction invokeContractMethod(
+      ChainLike chain, NeoGetContractState.ContractState contractState,
+      ContractManifest.ContractABI.ContractMethod methodToInvoke,
+      List<ContractParameter> parameters, NEP6Wallet nep6Wallet) {
     var neow3j = project.getService(UtilService.class).getNeow3jInstance(chain);
     if (neow3j == null) {
       // notified, exiting
-      return;
+      return null;
     }
 
     var wallet = Wallet.fromNEP6Wallet(nep6Wallet);
     project.getService(WalletService.class).decryptWalletWithDefaultPassword(wallet);
 
     try {
-      new SmartContract(contractState.getHash(), neow3j)
+      return new SmartContract(contractState.getHash(), neow3j)
           .invokeFunction(methodToInvoke.getName(), parameters.toArray(ContractParameter[]::new))
           .wallet(wallet)
           .signers(Signer.calledByEntry(wallet.getAccounts().get(0)))
-          .sign()
-          .send().getRawResponse();
-      NeoNotifier.notifySuccess(project, NeoMessageBundle.message("contracts.invoke.submitted"));
+          .sign().send().getSendRawTransaction();
     } catch (Throwable throwable) {
       NeoNotifier.notifyError(project, throwable.getMessage());
+      return null;
     }
   }
 
