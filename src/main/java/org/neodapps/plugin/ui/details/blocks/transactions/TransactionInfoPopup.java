@@ -13,7 +13,9 @@ import com.intellij.ui.components.JBTextArea;
 import com.intellij.ui.components.JBTextField;
 import com.intellij.util.ui.FormBuilder;
 import com.intellij.util.ui.JBUI;
+import io.neow3j.crypto.Base64;
 import io.neow3j.protocol.core.response.Transaction;
+import io.neow3j.script.ScriptReader;
 import java.util.Map;
 import javax.swing.JPanel;
 import org.neodapps.plugin.NeoMessageBundle;
@@ -91,7 +93,7 @@ public class TransactionInfoPopup {
     // add script
     var script = new JBTextArea();
     script.setColumns(50);
-    script.setText(transaction.getScript());
+    script.setText(ScriptReader.convertToOpCodeString(Base64.decode(transaction.getScript())));
     script.setEditable(false);
 
     builder.addLabeledComponent(
