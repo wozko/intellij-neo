@@ -26,9 +26,7 @@ import org.neodapps.plugin.blockchain.ChainLike;
 public class BlockInfoTableModel extends AbstractTableModel implements Disposable {
   final Project project;
   final List<NeoBlock> blocks = new ArrayList<>();
-  final List<NeoBlock> nonEmptyBlocks = new ArrayList<>();
   final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd h:mm a");
-  private boolean hideEmptyBlocks;
   private final String[] columnNames = {
       BlockInfoTableColumn.INDEX.getName(), BlockInfoTableColumn.TIME.getName(),
       BlockInfoTableColumn.TRANSACTIONS.getName(), BlockInfoTableColumn.HASH.getName(),
@@ -47,7 +45,7 @@ public class BlockInfoTableModel extends AbstractTableModel implements Disposabl
 
   @Override
   public int getRowCount() {
-    return hideEmptyBlocks ? nonEmptyBlocks.size() : blocks.size();
+    return blocks.size();
   }
 
   @Override
@@ -62,20 +60,18 @@ public class BlockInfoTableModel extends AbstractTableModel implements Disposabl
 
   @Override
   public Object getValueAt(int rowIndex, int columnIndex) {
-    var blockList = hideEmptyBlocks ? nonEmptyBlocks : blocks;
-    int index = blockList.size() - rowIndex - 1;
-
+    var block = blocks.get(rowIndex);
     switch (columnIndex) {
       case 0:
-        return blockList.get(index).getIndex();
+        return block.getIndex();
       case 1:
-        return sdf.format(new Timestamp(blockList.get(index).getTime()).getTime());
+        return sdf.format(new Timestamp(block.getTime()).getTime());
       case 2:
-        return blockList.get(index).getTransactions().size();
+        return block.getTransactions().size();
       case 3:
-        return blockList.get(index).getHash();
+        return block.getHash();
       case 4:
-        return String.format("%d Bytes", blockList.get(index).getSize());
+        return String.format("%d Bytes", block.getSize());
       default:
         return null;
     }
@@ -84,22 +80,28 @@ public class BlockInfoTableModel extends AbstractTableModel implements Disposabl
   /**
    * Subscribe table model to latest blocks.
    *
+   * @param selectedChain   chain to subscribe
+   * @param hideEmptyBlocks filter empty blocks
    * @throws URISyntaxException thrown when url is in an invalid format.
    */
-  public void subscribe(ChainLike selectedChain) throws URISyntaxException, IOException {
+  public void subscribe(ChainLike selectedChain, Boolean hideEmptyBlocks)
+      throws URISyntaxException, IOException {
     var neow3j =
         Neow3j.build(new HttpService(selectedChain.getSelectedItem().getUrl()));
     var blockCount = neow3j.getBlockCount().send().getBlockCount();
     var observable = neow3j
         .catchUpToLatestAndSubscribeToNewBlocksObservable(
-            new BigInteger("1").max(blockCount.subtract(new BigInteger("10"))),
+            new BigInteger("0").max(blockCount.subtract(new BigInteger("10"))),
             true);
 
     disposableRxJx = observable.subscribe(blockReq -> {
       var block = blockReq.getBlock();
-      blocks.add(block);
-      if (block.getTransactions().size() > 0) {
-        nonEmptyBlocks.add(block);
+      if (hideEmptyBlocks) {
+        if (block.getTransactions().size() > 0) {
+          blocks.add(0, block);
+        }
+      } else {
+        blocks.add(0, block);
       }
     });
   }
@@ -113,16 +115,12 @@ public class BlockInfoTableModel extends AbstractTableModel implements Disposabl
     }
   }
 
-  public void hideEmptyBlocks(boolean hide) {
-    this.hideEmptyBlocks = hide;
-  }
-
   @Override
   public void dispose() {
     disposeObservable();
   }
 
   public NeoBlock getBlock(int index) {
-    return blocks.get(blocks.size() - index - 1);
+    return blocks.get(index);
   }
 }

@@ -10,7 +10,6 @@ import com.intellij.ui.tabs.TabInfo;
 import com.intellij.ui.tabs.impl.JBTabsImpl;
 import com.intellij.util.ui.JBUI;
 import java.awt.event.ItemEvent;
-import java.awt.event.ItemListener;
 import javax.swing.JComponent;
 import org.neodapps.plugin.NeoMessageBundle;
 import org.neodapps.plugin.blockchain.BlockChainType;
@@ -53,17 +52,18 @@ public class TabsComponent extends Wrapper implements Disposable {
 
   private void addBlockTableComponent(ChainLike selectedChain) {
     var panel = JBUI.Panels.simplePanel();
-    var table = new BlockInfoTable(this.project, selectedChain);
-    panel.addToCenter(new JBScrollPane(table));
+    var blockTableWrapper = new Wrapper();
 
+    // table
+    blockTableWrapper.setContent(new JBScrollPane(
+        new BlockInfoTable(project, selectedChain, false)));
+    panel.addToCenter(blockTableWrapper);
+
+    // toolbar
     var hideCheckbox = new JBCheckBox();
     hideCheckbox.setText("Hide empty blocks");
-    hideCheckbox.addItemListener(new ItemListener() {
-      @Override
-      public void itemStateChanged(ItemEvent e) {
-        table.filterEmptyBlocks(e.getStateChange() == ItemEvent.SELECTED);
-      }
-    });
+    hideCheckbox.addItemListener(e -> blockTableWrapper.setContent(new JBScrollPane(
+        new BlockInfoTable(project, selectedChain, e.getStateChange() == ItemEvent.SELECTED))));
     panel.addToTop(hideCheckbox);
 
     TabInfo blockTab = new TabInfo(panel)

@@ -26,9 +26,10 @@ public class BlockInfoTable extends JBTable implements Disposable {
   /**
    * Creates the block info table.
    *
-   * @param project intellij project
+   * @param project         intellij project
+   * @param hideEmptyBlocks if empty blocks should be filtered out
    */
-  public BlockInfoTable(Project project, ChainLike selectedChain) {
+  public BlockInfoTable(Project project, ChainLike selectedChain, boolean hideEmptyBlocks) {
     super(new BlockInfoTableModel(project));
     this.project = project;
 
@@ -69,18 +70,18 @@ public class BlockInfoTable extends JBTable implements Disposable {
       }
     });
 
-    subscribeToBlocks(selectedChain);
+    subscribeToBlocks(selectedChain, hideEmptyBlocks);
   }
 
   /**
    * Subscribe to latest blocks.
    */
-  public void subscribeToBlocks(ChainLike selectedChain) {
+  public void subscribeToBlocks(ChainLike selectedChain, boolean hideEmptyBlocks) {
     if (selectedChain == null) {
       return;
     }
     try {
-      ((BlockInfoTableModel) getModel()).subscribe(selectedChain);
+      ((BlockInfoTableModel) getModel()).subscribe(selectedChain, hideEmptyBlocks);
     } catch (URISyntaxException | IOException e) {
       NeoNotifier.notifyError(project, e.getMessage());
     }
@@ -93,14 +94,5 @@ public class BlockInfoTable extends JBTable implements Disposable {
   @Override
   public void dispose() {
     unSubscribeFromBlocks();
-  }
-
-  /**
-   * Set column filter to hide empty blocks.
-   *
-   * @param filterEmptyBlocks boolean condition to hide
-   */
-  public void filterEmptyBlocks(boolean filterEmptyBlocks) {
-    ((BlockInfoTableModel) getModel()).hideEmptyBlocks(filterEmptyBlocks);
   }
 }
