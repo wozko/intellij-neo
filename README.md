@@ -4,7 +4,7 @@
 [![Downloads](https://img.shields.io/jetbrains/plugin/d/17195.svg)](https://plugins.jetbrains.com/plugin/17195)
 
 <!-- Plugin description -->
-This Neo plugin will accelerate your Neo development experience on intellij based IDEs.
+An Intellij plugin for Neo blockchain.
 
 - Create and manage local private N3 private net instances (uses neo-express)
 - Create wallets and transfer assets between wallets
@@ -46,3 +46,20 @@ Click <kbd>+ Private Net</kbd> button and specify the number of nodes to create 
   Download the [latest release](https://github.com/intellij-neo/intellij-neo/releases/latest) and install it manually
   using
   <kbd>Settings/Preferences</kbd> > <kbd>Plugins</kbd> > <kbd>⚙️</kbd> > <kbd>Install plugin from disk...</kbd>
+
+## Demo
+
+[![Intellij Plugin for Neo](http://img.youtube.com/vi/SZKyt284PnI/0.jpg)](http://www.youtube.com/watch?v=SZKyt284PnI "Intellij Plugin for Neo")
+
+## Donations
+
+Buy me a coffee, Keep this plugin alive.
+
+Neo: `AYj3BcaBdcYMnH6aSGDUvC9jf5CZgJYD3s`
+
+## Special Thanks
+
+This plugin relies on the following components quite heavily. We are super thankful for them ;)
+
+1) Neo-Express - https://github.com/neo-project/neo-express
+2) Neow3J Library - https://github.com/neow3j/neow3j

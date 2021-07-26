@@ -6,6 +6,7 @@
 package org.neodapps.plugin.services.chain;
 
 import com.google.gson.annotations.SerializedName;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -38,7 +39,15 @@ public class InvokeFileItem {
     return operation;
   }
 
+  /**
+   * Gets invoke file item arguments.
+   *
+   * @return the arguments specified in the file.
+   */
   public List<Object> getArgs() {
+    if (args == null) {
+      args = new ArrayList<>();
+    }
     return args;
   }
 

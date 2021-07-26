@@ -14,8 +14,10 @@ import com.intellij.ui.components.JBTextArea;
 import com.intellij.ui.components.JBTextField;
 import com.intellij.util.ui.FormBuilder;
 import com.intellij.util.ui.JBUI;
+import io.neow3j.crypto.Base64;
 import io.neow3j.protocol.core.response.NeoBlock;
 import io.neow3j.protocol.core.response.NeoWitness;
+import io.neow3j.script.ScriptReader;
 import java.awt.GridLayout;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
@@ -122,8 +124,7 @@ public class BlockItemPopup {
   }
 
   private JBScrollPane getTransactionsTable() {
-    var pane = new JBScrollPane(new TransactionsTable(block.getTransactions(), chain));
-    return pane;
+    return new JBScrollPane(new TransactionsTable(block.getTransactions(), chain));
   }
 
   private JComponent getWitnessData(List<NeoWitness> witnesses) {
@@ -136,13 +137,15 @@ public class BlockItemPopup {
       //  invocation script
       var invocationScript = new JBTextArea();
       invocationScript.setColumns(50);
-      invocationScript.setText(witness.getInvocation());
+      invocationScript
+          .setText(ScriptReader.convertToOpCodeString(Base64.decode(witness.getInvocation())));
       invocationScript.setEditable(false);
 
       //  verification script
       var verificationScript = new JBTextArea();
       verificationScript.setColumns(50);
-      verificationScript.setText(witness.getVerification());
+      verificationScript
+          .setText(ScriptReader.convertToOpCodeString(Base64.decode(witness.getVerification())));
       verificationScript.setEditable(false);
 
       var builder = new FormBuilder();

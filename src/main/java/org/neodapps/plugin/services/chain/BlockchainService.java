@@ -13,15 +13,20 @@ import io.neow3j.contract.Token;
 import io.neow3j.protocol.Neow3j;
 import io.neow3j.protocol.ObjectMapperFactory;
 import io.neow3j.protocol.core.response.ContractManifest;
+import io.neow3j.protocol.core.response.InvocationResult;
+import io.neow3j.protocol.core.response.NeoGetBlock;
 import io.neow3j.protocol.core.response.NeoGetContractState;
+import io.neow3j.protocol.core.response.NeoSendRawTransaction;
 import io.neow3j.protocol.http.HttpService;
 import io.neow3j.transaction.Signer;
 import io.neow3j.types.ContractParameter;
 import io.neow3j.types.Hash160;
 import io.neow3j.wallet.Wallet;
 import io.neow3j.wallet.nep6.NEP6Wallet;
+import io.reactivex.Observable;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.file.Paths;
@@ -151,32 +156,95 @@ public class BlockchainService {
    * @param parameters     method params
    * @param nep6Wallet     wallet to sign
    */
-  public void invokeContractMethod(ChainLike chain,
-                                   NeoGetContractState.ContractState contractState,
-                                   ContractManifest.ContractABI.ContractMethod methodToInvoke,
-                                   List<ContractParameter> parameters,
-                                   NEP6Wallet nep6Wallet) {
+  public NeoSendRawTransaction.RawTransaction invokeContractMethod(
+      ChainLike chain, NeoGetContractState.ContractState contractState,
+      ContractManifest.ContractABI.ContractMethod methodToInvoke,
+      List<ContractParameter> parameters, NEP6Wallet nep6Wallet) {
     var neow3j = project.getService(UtilService.class).getNeow3jInstance(chain);
     if (neow3j == null) {
       // notified, exiting
-      return;
+      return null;
     }
 
     var wallet = Wallet.fromNEP6Wallet(nep6Wallet);
-    project.getService(WalletService.class).decryptWalletWithDefaultPassword(wallet);
-
+    var walletService = project.getService(WalletService.class);
+    walletService.decryptWalletWithDefaultPassword(wallet);
     try {
-      new SmartContract(contractState.getHash(), neow3j)
+      return new SmartContract(contractState.getHash(), neow3j)
           .invokeFunction(methodToInvoke.getName(), parameters.toArray(ContractParameter[]::new))
           .wallet(wallet)
           .signers(Signer.calledByEntry(wallet.getAccounts().get(0)))
-          .sign()
-          .send().getRawResponse();
-      NeoNotifier.notifySuccess(project, NeoMessageBundle.message("contracts.invoke.submitted"));
+          .sign().send().getSendRawTransaction();
     } catch (Throwable throwable) {
       NeoNotifier.notifyError(project, throwable.getMessage());
+      return null;
+    } finally {
+      walletService.decryptWalletWithDefaultPassword(wallet);
     }
   }
+
+  /**
+   * Test invoke a contract method and returns result.
+   *
+   * @param chain          selected chain
+   * @param contractState  contract to invoke
+   * @param methodToInvoke method to invoke
+   * @param parameters     method params
+   * @param nep6Wallet     wallet to sign
+   */
+  public InvocationResult testInvokeContractMethod(
+      ChainLike chain, NeoGetContractState.ContractState contractState,
+      ContractManifest.ContractABI.ContractMethod methodToInvoke,
+      List<ContractParameter> parameters, NEP6Wallet nep6Wallet) {
+    var neow3j = project.getService(UtilService.class).getNeow3jInstance(chain);
+    if (neow3j == null) {
+      // notified, exiting
+      return null;
+    }
+
+    var wallet = Wallet.fromNEP6Wallet(nep6Wallet);
+    var walletService = project.getService(WalletService.class);
+    walletService.decryptWalletWithDefaultPassword(wallet);
+    try {
+      return new SmartContract(contractState.getHash(), neow3j)
+          .callInvokeFunction(methodToInvoke.getName(), parameters,
+              Signer.calledByEntry(wallet.getAccounts().get(0).getScriptHash()))
+          .getInvocationResult();
+    } catch (Throwable throwable) {
+      NeoNotifier.notifyError(project, throwable.getMessage());
+      return null;
+    } finally {
+      walletService.decryptWalletWithDefaultPassword(wallet);
+    }
+  }
+
+  /**
+   * Subscribes and listen to blocks.
+   *
+   * @param chainLike chain to subscribe
+   */
+  public Observable<NeoGetBlock> subscribeToBlocks(ChainLike chainLike) {
+    var neow3j = project.getService(UtilService.class).getNeow3jInstance(chainLike);
+    if (neow3j == null) {
+      // notified, exiting
+      return null;
+    }
+
+    BigInteger blockCount;
+    try {
+      blockCount = neow3j.getBlockCount().send().getBlockCount();
+    } catch (IOException e) {
+      NeoNotifier.notifyError(project, e.getMessage());
+      return null;
+    }
+
+    return neow3j
+        .catchUpToLatestAndSubscribeToNewBlocksObservable(
+            new BigInteger("0").max(blockCount.subtract(new BigInteger("10"))),
+            true);
+
+  }
+
 
   private NodeRunningState getPublicNodeRunningState(Chain chain) {
     var neow3j = project.getService(UtilService.class).getNeow3jInstance(chain);

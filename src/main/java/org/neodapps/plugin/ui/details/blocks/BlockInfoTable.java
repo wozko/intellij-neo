@@ -9,12 +9,14 @@ import com.intellij.openapi.Disposable;
 import com.intellij.openapi.project.Project;
 import com.intellij.ui.table.JBTable;
 import io.neow3j.protocol.core.response.NeoBlock;
+import io.neow3j.protocol.core.response.NeoGetBlock;
+import io.reactivex.Observable;
 import java.awt.Cursor;
-import java.io.IOException;
-import java.net.URISyntaxException;
 import javax.swing.ListSelectionModel;
+import javax.swing.SwingWorker;
 import org.neodapps.plugin.NeoNotifier;
 import org.neodapps.plugin.blockchain.ChainLike;
+import org.neodapps.plugin.services.chain.BlockchainService;
 import org.neodapps.plugin.topics.NodeChangeNotifier;
 
 /**
@@ -26,9 +28,10 @@ public class BlockInfoTable extends JBTable implements Disposable {
   /**
    * Creates the block info table.
    *
-   * @param project intellij project
+   * @param project         intellij project
+   * @param hideEmptyBlocks if empty blocks should be filtered out
    */
-  public BlockInfoTable(Project project, ChainLike selectedChain) {
+  public BlockInfoTable(Project project, ChainLike selectedChain, boolean hideEmptyBlocks) {
     super(new BlockInfoTableModel(project));
     this.project = project;
 
@@ -69,21 +72,38 @@ public class BlockInfoTable extends JBTable implements Disposable {
       }
     });
 
-    subscribeToBlocks(selectedChain);
+    subscribeToBlocks(selectedChain, hideEmptyBlocks);
   }
 
   /**
    * Subscribe to latest blocks.
    */
-  public void subscribeToBlocks(ChainLike selectedChain) {
-    if (selectedChain == null) {
-      return;
-    }
-    try {
-      ((BlockInfoTableModel) getModel()).subscribe(selectedChain);
-    } catch (URISyntaxException | IOException e) {
-      NeoNotifier.notifyError(project, e.getMessage());
-    }
+  public void subscribeToBlocks(ChainLike selectedChain, boolean hideEmptyBlocks) {
+    var worker = new SwingWorker<Observable<NeoGetBlock>, Void>() {
+      @Override
+      protected Observable<NeoGetBlock> doInBackground() {
+        var service = project.getService(BlockchainService.class);
+        return service.subscribeToBlocks(selectedChain);
+      }
+
+      @Override
+      protected void done() {
+        Observable<NeoGetBlock> observable;
+        try {
+          observable = get();
+          if (observable == null) {
+            // notified, do nothing
+            return;
+          }
+          ((BlockInfoTableModel) getModel()).subscribe(observable, hideEmptyBlocks);
+
+        } catch (Exception e) {
+          NeoNotifier.notifyError(project, e.getMessage());
+        }
+      }
+    };
+
+    worker.execute();
   }
 
   public void unSubscribeFromBlocks() {
@@ -93,14 +113,5 @@ public class BlockInfoTable extends JBTable implements Disposable {
   @Override
   public void dispose() {
     unSubscribeFromBlocks();
-  }
-
-  /**
-   * Set column filter to hide empty blocks.
-   *
-   * @param filterEmptyBlocks boolean condition to hide
-   */
-  public void filterEmptyBlocks(boolean filterEmptyBlocks) {
-    ((BlockInfoTableModel) getModel()).hideEmptyBlocks(filterEmptyBlocks);
   }
 }

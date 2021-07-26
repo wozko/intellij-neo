@@ -102,4 +102,8 @@ tasks {
         ignoreFailures = false
         maxWarnings = 0
     }
+
+    publishPlugin {
+        token.set(System.getenv("ORG_GRADLE_PROJECT_intellijPublishToken"))
+    }
 }
