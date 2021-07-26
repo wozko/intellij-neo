@@ -172,11 +172,11 @@ public class ChainListService {
     return new Chain(
         BlockChainType.TEST,
         Arrays.asList(
-            new ConsensusNode("http://seed1t.neo.org", 20332),
-            new ConsensusNode("http://seed2t.neo.org", 20332),
-            new ConsensusNode("http://seed3t.neo.org", 20332),
-            new ConsensusNode("http://seed4t.neo.org", 20332),
-            new ConsensusNode("http://seed5t.neo.org", 20332)
+            new ConsensusNode("http://seed1t4.neo.org", 20332),
+            new ConsensusNode("http://seed2t4.neo.org", 20332),
+            new ConsensusNode("http://seed3t4.neo.org", 20332),
+            new ConsensusNode("http://seed4t4.neo.org", 20332),
+            new ConsensusNode("http://seed5t4.neo.org", 20332)
         )
     );
   }
