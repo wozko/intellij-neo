@@ -23,6 +23,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 import javax.swing.JPanel;
 import javax.swing.border.CompoundBorder;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.neodapps.plugin.NeoMessageBundle;
@@ -243,10 +245,36 @@ public class InvokeItemComponent extends Wrapper implements Disposable {
         var value = "";
         if (i < args.size()) {
           value = args.get(i).toString();
+        } else {
+          args.add(value);
         }
         argParam.setText(value);
         argumentBuilder
             .addLabeledComponent(new JBLabel(parameter.getParamName()), argParam);
+
+        // update args on arg param changes
+        // this is used to save changes in invoke files
+        int finalI = i;
+        argParam.getDocument().addDocumentListener(new DocumentListener() {
+          @Override
+          public void insertUpdate(DocumentEvent documentEvent) {
+            updateArgs();
+          }
+
+          @Override
+          public void removeUpdate(DocumentEvent documentEvent) {
+            updateArgs();
+          }
+
+          @Override
+          public void changedUpdate(DocumentEvent documentEvent) {
+            updateArgs();
+          }
+
+          private void updateArgs() {
+            args.set(finalI, argParam.getText());
+          }
+        });
       }
       setRunnable(true);
     }
