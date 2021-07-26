@@ -11,8 +11,8 @@ import com.intellij.ui.components.JBList;
 import com.intellij.util.ui.FormBuilder;
 import com.intellij.util.ui.JBUI;
 import io.neow3j.protocol.core.response.ContractManifest;
+import io.neow3j.protocol.core.response.InvocationResult;
 import io.neow3j.protocol.core.response.NeoGetContractState;
-import io.neow3j.protocol.core.response.NeoSendRawTransaction;
 import io.neow3j.types.ContractParameter;
 import io.neow3j.wallet.nep6.NEP6Wallet;
 import java.util.List;
@@ -95,7 +95,7 @@ public class InvokeItemRunPopup implements Disposable {
 
     // transfer asset
     this.actionButton =
-        new ToolWindowButton(NeoMessageBundle.message("contracts.invoke.action"),
+        new ToolWindowButton(NeoMessageBundle.message("contracts.invoke.proceed"),
             AllIcons.Actions.Execute,
             e -> {
               closePopup();
@@ -113,23 +113,27 @@ public class InvokeItemRunPopup implements Disposable {
     return content;
   }
 
+
   private void runSteps(NEP6Wallet wallet) {
-    var worker = new SwingWorker<NeoSendRawTransaction.RawTransaction, Void>() {
+    var worker = new SwingWorker<InvocationResult, Void>() {
 
       @Override
-      protected NeoSendRawTransaction.RawTransaction doInBackground() {
+      protected InvocationResult doInBackground() {
         return project.getService(BlockchainService.class)
-            .invokeContractMethod(chain, contractState, method, parameters, wallet);
+            .testInvokeContractMethod(chain, contractState, method, parameters, wallet);
       }
 
       @Override
       protected void done() {
-        NeoSendRawTransaction.RawTransaction transaction;
+        InvocationResult result;
         try {
-          transaction = get();
-          if (transaction != null) {
-            NeoNotifier.notifySuccess(project, NeoMessageBundle
-                .message("contracts.invoke.submitted", transaction.getHash().toString()));
+          result = get();
+          if (result != null) {
+            var popup =
+                new TestInvokeComponentPopup(project, chain, result, contractState, method,
+                    parameters,
+                    wallet);
+            popup.showPopup();
           }
         } catch (Exception e) {
           NeoNotifier.notifyError(project, e.getMessage());

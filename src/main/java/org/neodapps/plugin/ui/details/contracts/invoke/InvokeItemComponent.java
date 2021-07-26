@@ -159,14 +159,14 @@ public class InvokeItemComponent extends Wrapper implements Disposable {
         this.operationNamesComboBox.removeAllItems();
         var selectedContractOption = this.deployedContracts.stream()
             .filter(c -> c.getManifest().getName().equals(contractNameComboBox.getSelectedItem()))
-            .findAny();
+            .collect(Collectors.toList());
 
         if (selectedContractOption.isEmpty()) {
           showContractNameError(true);
           selectedContract = null;
         } else {
           showContractNameError(false);
-          selectedContract = selectedContractOption.get();
+          selectedContract = selectedContractOption.get(selectedContractOption.size() - 1);
           var methods = selectedContract.getManifest()
               .getAbi()
               .getMethods();

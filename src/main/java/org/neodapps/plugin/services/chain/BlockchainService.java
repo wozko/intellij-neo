@@ -13,6 +13,7 @@ import io.neow3j.contract.Token;
 import io.neow3j.protocol.Neow3j;
 import io.neow3j.protocol.ObjectMapperFactory;
 import io.neow3j.protocol.core.response.ContractManifest;
+import io.neow3j.protocol.core.response.InvocationResult;
 import io.neow3j.protocol.core.response.NeoGetBlock;
 import io.neow3j.protocol.core.response.NeoGetContractState;
 import io.neow3j.protocol.core.response.NeoSendRawTransaction;
@@ -166,8 +167,8 @@ public class BlockchainService {
     }
 
     var wallet = Wallet.fromNEP6Wallet(nep6Wallet);
-    project.getService(WalletService.class).decryptWalletWithDefaultPassword(wallet);
-
+    var walletService = project.getService(WalletService.class);
+    walletService.decryptWalletWithDefaultPassword(wallet);
     try {
       return new SmartContract(contractState.getHash(), neow3j)
           .invokeFunction(methodToInvoke.getName(), parameters.toArray(ContractParameter[]::new))
@@ -177,6 +178,43 @@ public class BlockchainService {
     } catch (Throwable throwable) {
       NeoNotifier.notifyError(project, throwable.getMessage());
       return null;
+    } finally {
+      walletService.decryptWalletWithDefaultPassword(wallet);
+    }
+  }
+
+  /**
+   * Test invoke a contract method and returns result.
+   *
+   * @param chain          selected chain
+   * @param contractState  contract to invoke
+   * @param methodToInvoke method to invoke
+   * @param parameters     method params
+   * @param nep6Wallet     wallet to sign
+   */
+  public InvocationResult testInvokeContractMethod(
+      ChainLike chain, NeoGetContractState.ContractState contractState,
+      ContractManifest.ContractABI.ContractMethod methodToInvoke,
+      List<ContractParameter> parameters, NEP6Wallet nep6Wallet) {
+    var neow3j = project.getService(UtilService.class).getNeow3jInstance(chain);
+    if (neow3j == null) {
+      // notified, exiting
+      return null;
+    }
+
+    var wallet = Wallet.fromNEP6Wallet(nep6Wallet);
+    var walletService = project.getService(WalletService.class);
+    walletService.decryptWalletWithDefaultPassword(wallet);
+    try {
+      return new SmartContract(contractState.getHash(), neow3j)
+          .callInvokeFunction(methodToInvoke.getName(), parameters,
+              Signer.calledByEntry(wallet.getAccounts().get(0).getScriptHash()))
+          .getInvocationResult();
+    } catch (Throwable throwable) {
+      NeoNotifier.notifyError(project, throwable.getMessage());
+      return null;
+    } finally {
+      walletService.decryptWalletWithDefaultPassword(wallet);
     }
   }
 
