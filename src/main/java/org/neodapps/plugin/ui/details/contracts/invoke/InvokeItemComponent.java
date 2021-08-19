@@ -11,7 +11,7 @@ import com.intellij.ui.components.panels.Wrapper;
 import com.intellij.util.ui.FormBuilder;
 import com.intellij.util.ui.JBUI;
 import io.neow3j.protocol.core.response.ContractManifest;
-import io.neow3j.protocol.core.response.NeoGetContractState;
+import io.neow3j.protocol.core.response.ExpressContractState;
 import io.neow3j.types.ContractParameter;
 import io.neow3j.types.ContractParameterType;
 import io.neow3j.types.Hash160;
@@ -39,7 +39,7 @@ public class InvokeItemComponent extends Wrapper implements Disposable {
   private final Project project;
   private final ChainLike chain;
   private final InvokeFileItem item;
-  private final List<NeoGetContractState.ContractState> deployedContracts;
+  private final List<ExpressContractState> deployedContracts;
   private final List<NEP6Wallet> availableWallets;
   private final InvokeItemAction invokeItemAction;
 
@@ -51,7 +51,7 @@ public class InvokeItemComponent extends Wrapper implements Disposable {
   private Wrapper argsPanel;
   private ToolWindowButton runStepButton;
 
-  private NeoGetContractState.ContractState selectedContract;
+  private ExpressContractState selectedContract;
   private ContractManifest.ContractABI.ContractMethod selectedOperation;
   private List<ArgumentField> argumentFields;
 
@@ -62,7 +62,7 @@ public class InvokeItemComponent extends Wrapper implements Disposable {
                              ChainLike chain,
                              InvokeFileItem item,
                              InvokeItemAction invokeItemAction,
-                             List<NeoGetContractState.ContractState> deployedContracts,
+                             List<ExpressContractState> deployedContracts,
                              List<NEP6Wallet> availableWallets) {
     this.project = project;
     this.chain = chain;

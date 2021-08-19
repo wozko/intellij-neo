@@ -13,12 +13,12 @@ import io.neow3j.contract.Token;
 import io.neow3j.protocol.Neow3j;
 import io.neow3j.protocol.ObjectMapperFactory;
 import io.neow3j.protocol.core.response.ContractManifest;
+import io.neow3j.protocol.core.response.ExpressContractState;
 import io.neow3j.protocol.core.response.InvocationResult;
 import io.neow3j.protocol.core.response.NeoGetBlock;
-import io.neow3j.protocol.core.response.NeoGetContractState;
 import io.neow3j.protocol.core.response.NeoSendRawTransaction;
 import io.neow3j.protocol.http.HttpService;
-import io.neow3j.transaction.Signer;
+import io.neow3j.transaction.AccountSigner;
 import io.neow3j.types.ContractParameter;
 import io.neow3j.types.Hash160;
 import io.neow3j.wallet.Wallet;
@@ -101,7 +101,7 @@ public class BlockchainService {
       new ContractManagement(neow3j)
           .deploy(nefFile, manifest)
           .wallet(wallet)
-          .signers(Signer.global(wallet.getAccounts().get(0).getScriptHash()))
+          .signers(AccountSigner.global(wallet.getAccounts().get(0).getScriptHash()))
           .sign()
           .send();
       NeoNotifier.notifySuccess(project,
@@ -157,7 +157,7 @@ public class BlockchainService {
    * @param nep6Wallet     wallet to sign
    */
   public NeoSendRawTransaction.RawTransaction invokeContractMethod(
-      ChainLike chain, NeoGetContractState.ContractState contractState,
+      ChainLike chain, ExpressContractState contractState,
       ContractManifest.ContractABI.ContractMethod methodToInvoke,
       List<ContractParameter> parameters, NEP6Wallet nep6Wallet) {
     var neow3j = project.getService(UtilService.class).getNeow3jInstance(chain);
@@ -173,7 +173,7 @@ public class BlockchainService {
       return new SmartContract(contractState.getHash(), neow3j)
           .invokeFunction(methodToInvoke.getName(), parameters.toArray(ContractParameter[]::new))
           .wallet(wallet)
-          .signers(Signer.calledByEntry(wallet.getAccounts().get(0)))
+          .signers(AccountSigner.calledByEntry(wallet.getAccounts().get(0)))
           .sign().send().getSendRawTransaction();
     } catch (Throwable throwable) {
       NeoNotifier.notifyError(project, throwable.getMessage());
@@ -193,7 +193,7 @@ public class BlockchainService {
    * @param nep6Wallet     wallet to sign
    */
   public InvocationResult testInvokeContractMethod(
-      ChainLike chain, NeoGetContractState.ContractState contractState,
+      ChainLike chain, ExpressContractState contractState,
       ContractManifest.ContractABI.ContractMethod methodToInvoke,
       List<ContractParameter> parameters, NEP6Wallet nep6Wallet) {
     var neow3j = project.getService(UtilService.class).getNeow3jInstance(chain);
@@ -208,7 +208,7 @@ public class BlockchainService {
     try {
       return new SmartContract(contractState.getHash(), neow3j)
           .callInvokeFunction(methodToInvoke.getName(), parameters,
-              Signer.calledByEntry(wallet.getAccounts().get(0).getScriptHash()))
+              AccountSigner.calledByEntry(wallet.getAccounts().get(0).getScriptHash()))
           .getInvocationResult();
     } catch (Throwable throwable) {
       NeoNotifier.notifyError(project, throwable.getMessage());
@@ -272,7 +272,7 @@ public class BlockchainService {
       // do not use the util.getmagicnumber function here
       magicNumber =
           Integer.toUnsignedLong(
-              ByteBuffer.wrap(neow3j.getNetworkMagicNumber()).order(ByteOrder.LITTLE_ENDIAN)
+              ByteBuffer.wrap(neow3j.getNetworkMagicNumberBytes()).order(ByteOrder.LITTLE_ENDIAN)
                   .getInt());
     } catch (IOException e) {
       return NodeRunningState.NOT_RUNNING;

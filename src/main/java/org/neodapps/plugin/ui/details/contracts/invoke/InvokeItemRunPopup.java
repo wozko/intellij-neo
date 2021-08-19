@@ -11,8 +11,8 @@ import com.intellij.ui.components.JBList;
 import com.intellij.util.ui.FormBuilder;
 import com.intellij.util.ui.JBUI;
 import io.neow3j.protocol.core.response.ContractManifest;
+import io.neow3j.protocol.core.response.ExpressContractState;
 import io.neow3j.protocol.core.response.InvocationResult;
-import io.neow3j.protocol.core.response.NeoGetContractState;
 import io.neow3j.types.ContractParameter;
 import io.neow3j.wallet.nep6.NEP6Wallet;
 import java.util.List;
@@ -34,7 +34,7 @@ public class InvokeItemRunPopup implements Disposable {
   private final Project project;
   private final ChainLike chain;
   private final List<NEP6Wallet> wallets;
-  NeoGetContractState.ContractState contractState;
+  ExpressContractState contractState;
   ContractManifest.ContractABI.ContractMethod method;
   List<ContractParameter> parameters;
 
@@ -46,7 +46,7 @@ public class InvokeItemRunPopup implements Disposable {
    */
   public InvokeItemRunPopup(Project project, ChainLike chain,
                             List<NEP6Wallet> wallets,
-                            NeoGetContractState.ContractState contractState,
+                            ExpressContractState contractState,
                             ContractManifest.ContractABI.ContractMethod method,
                             List<ContractParameter> parameters) {
     this.project = project;
