@@ -13,7 +13,7 @@ import com.intellij.ui.components.JBLabel;
 import com.intellij.ui.components.JBTextField;
 import com.intellij.ui.components.panels.Wrapper;
 import com.intellij.util.ui.JBUI;
-import io.neow3j.protocol.core.response.NeoGetContractState;
+import io.neow3j.protocol.core.response.ExpressContractState;
 import io.neow3j.wallet.nep6.NEP6Wallet;
 import java.awt.FlowLayout;
 import java.io.IOException;
@@ -39,7 +39,7 @@ public class InvokeFileComponent extends Wrapper implements Disposable {
   private final ChainLike chain;
   private final InvokeFile invokeFile;
   private final List<NEP6Wallet> wallets;
-  private final List<NeoGetContractState.ContractState> contracts;
+  private final List<ExpressContractState> contracts;
 
   private Wrapper mainPanel;
   private Wrapper itemListWrapper;
@@ -60,7 +60,7 @@ public class InvokeFileComponent extends Wrapper implements Disposable {
                              ChainLike chain,
                              InvokeFile invokeFile,
                              List<NEP6Wallet> wallets,
-                             List<NeoGetContractState.ContractState> contractList) {
+                             List<ExpressContractState> contractList) {
     this.project = project;
     this.chain = chain;
     this.invokeFile = invokeFile;
@@ -131,9 +131,7 @@ public class InvokeFileComponent extends Wrapper implements Disposable {
         AllIcons.General.Add, e -> addStep());
     titlePanel.add(addStepButton);
 
-    items.forEach((id, item) -> {
-      addInvokeItemToPanel(item);
-    });
+    items.forEach((id, item) -> addInvokeItemToPanel(item));
     return panel;
   }
 

@@ -64,7 +64,7 @@ public class UtilService {
     }
     try {
       return Integer.toUnsignedLong(
-          ByteBuffer.wrap(neow3j.getNetworkMagicNumber()).order(ByteOrder.LITTLE_ENDIAN)
+          ByteBuffer.wrap(neow3j.getNetworkMagicNumberBytes()).order(ByteOrder.LITTLE_ENDIAN)
               .getInt());
     } catch (IOException e) {
       NeoNotifier.notifyError(project, e.getMessage());
