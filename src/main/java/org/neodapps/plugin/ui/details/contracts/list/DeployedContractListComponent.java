@@ -15,7 +15,7 @@ import com.intellij.ui.components.panels.Wrapper;
 import com.intellij.util.ui.FormBuilder;
 import com.intellij.util.ui.JBUI;
 import io.neow3j.protocol.core.response.ContractManifest;
-import io.neow3j.protocol.core.response.NeoGetContractState;
+import io.neow3j.protocol.core.response.ExpressContractState;
 import java.awt.BorderLayout;
 import java.awt.GridLayout;
 import java.util.List;
@@ -29,7 +29,7 @@ import org.neodapps.plugin.NeoMessageBundle;
  */
 public class DeployedContractListComponent extends Wrapper implements Disposable {
 
-  private final List<NeoGetContractState.ContractState> contracts;
+  private final List<ExpressContractState> contracts;
 
   private JBSplitter panel;
   private Wrapper details;
@@ -37,7 +37,7 @@ public class DeployedContractListComponent extends Wrapper implements Disposable
   /**
    * Creates the component that shows deployed contracts.
    */
-  public DeployedContractListComponent(List<NeoGetContractState.ContractState> deployedContracts) {
+  public DeployedContractListComponent(List<ExpressContractState> deployedContracts) {
     this.contracts = deployedContracts;
 
     this.panel = new JBSplitter(0.2f);
@@ -71,7 +71,7 @@ public class DeployedContractListComponent extends Wrapper implements Disposable
     return panel;
   }
 
-  private void showDetails(NeoGetContractState.ContractState selected) {
+  private void showDetails(ExpressContractState selected) {
     final var panel = JBUI.Panels.simplePanel();
     var builder = new FormBuilder();
     var contractName = new JBLabel(selected.getManifest().getName());

@@ -13,8 +13,8 @@ import com.intellij.util.ui.FormBuilder;
 import com.intellij.util.ui.JBUI;
 import io.neow3j.crypto.Base64;
 import io.neow3j.protocol.core.response.ContractManifest;
+import io.neow3j.protocol.core.response.ExpressContractState;
 import io.neow3j.protocol.core.response.InvocationResult;
-import io.neow3j.protocol.core.response.NeoGetContractState;
 import io.neow3j.protocol.core.response.NeoSendRawTransaction;
 import io.neow3j.protocol.core.stackitem.StackItem;
 import io.neow3j.script.ScriptReader;
@@ -41,7 +41,7 @@ public class TestInvokeComponentPopup implements Disposable {
   private final ChainLike chain;
 
   private final InvocationResult invocationResult;
-  private final NeoGetContractState.ContractState contractState;
+  private final ExpressContractState contractState;
   private final ContractManifest.ContractABI.ContractMethod method;
   private final List<ContractParameter> parameters;
   private final NEP6Wallet wallet;
@@ -55,7 +55,7 @@ public class TestInvokeComponentPopup implements Disposable {
    */
   public TestInvokeComponentPopup(Project project, ChainLike chain,
                                   InvocationResult result,
-                                  NeoGetContractState.ContractState contractState,
+                                  ExpressContractState contractState,
                                   ContractManifest.ContractABI.ContractMethod method,
                                   List<ContractParameter> parameters, NEP6Wallet wallet) {
     this.project = project;

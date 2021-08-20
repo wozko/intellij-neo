@@ -17,7 +17,7 @@ import com.intellij.ui.JBColor;
 import com.intellij.ui.components.JBLabel;
 import com.intellij.ui.components.panels.Wrapper;
 import com.intellij.util.ui.JBUI;
-import io.neow3j.protocol.core.response.NeoGetContractState;
+import io.neow3j.protocol.core.response.ExpressContractState;
 import io.neow3j.wallet.nep6.NEP6Wallet;
 import java.awt.FlowLayout;
 import java.io.IOException;
@@ -73,10 +73,10 @@ public class ContractsComponent extends Wrapper implements Disposable {
 
   private void loadAndSetContent() {
     var worker =
-        new SwingWorker<Pair<List<NEP6Wallet>, List<NeoGetContractState.ContractState>>, Void>() {
+        new SwingWorker<Pair<List<NEP6Wallet>, List<ExpressContractState>>, Void>() {
           @Override
           protected Pair<List<NEP6Wallet>,
-              List<NeoGetContractState.ContractState>> doInBackground() {
+              List<ExpressContractState>> doInBackground() {
             return new Pair<>(project.getService(WalletService.class).getWallets(chain),
                 project.getService(ContractServices.class).getContracts(chain));
           }
@@ -106,7 +106,7 @@ public class ContractsComponent extends Wrapper implements Disposable {
   }
 
   private JComponent getToolBar(List<NEP6Wallet> wallets,
-                                List<NeoGetContractState.ContractState> contracts) {
+                                List<ExpressContractState> contracts) {
     // toolbar has two buttons
     var buttonPanel = JBUI.Panels.simplePanel();
     buttonPanel.setLayout(new FlowLayout());
@@ -152,7 +152,7 @@ public class ContractsComponent extends Wrapper implements Disposable {
   }
 
   private void openInvokeFile(VirtualFile file, List<NEP6Wallet> wallets,
-                              List<NeoGetContractState.ContractState> contracts) {
+                              List<ExpressContractState> contracts) {
     var worker = new SwingWorker<InvokeFile, Void>() {
       @Override
       protected InvokeFile doInBackground() {

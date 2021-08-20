@@ -8,9 +8,8 @@ package org.neodapps.plugin.services.chain;
 import static java.util.Collections.emptyList;
 
 import com.intellij.openapi.project.Project;
-import io.neow3j.protocol.core.Request;
-import io.neow3j.protocol.core.response.NeoGetContractState;
-import io.neow3j.protocol.core.response.NeoGetNativeContracts;
+import io.neow3j.protocol.Neow3jExpress;
+import io.neow3j.protocol.core.response.ExpressContractState;
 import io.neow3j.protocol.http.HttpService;
 import java.io.IOException;
 import java.util.List;
@@ -37,12 +36,13 @@ public class ContractServices {
    * @param chain selected chain.
    * @return returns a list of contracts
    */
-  public List<NeoGetContractState.ContractState> getContracts(ChainLike chain) {
+  public List<ExpressContractState> getContracts(ChainLike chain) {
     if (chain.getType().equals(BlockChainType.PRIVATE)) {
       return getContractFromExpressRpc((PrivateChain) chain);
     } else {
       // return only native contracts
-      return getNativeContracts(chain);
+      // todo: keep track of deployed contracts
+      return emptyList();
     }
   }
 
@@ -52,7 +52,7 @@ public class ContractServices {
    * @param chain selected chain
    * @return native contract list
    */
-  public List<NeoGetContractState.ContractState> getNativeContracts(ChainLike chain) {
+  public List<? extends ExpressContractState> getNativeContracts(ChainLike chain) {
     var neow3j = project.getService(UtilService.class).getNeow3jInstance(chain);
     try {
       return neow3j.getNativeContracts().send().getNativeContracts();
@@ -62,29 +62,15 @@ public class ContractServices {
     }
   }
 
-  private List<NeoGetContractState.ContractState> getContractFromExpressRpc(PrivateChain chain) {
-    var neow3jService = new HttpService(chain.getSelectedItem().getUrl());
-
-    Request<Object, NeoGetNativeContracts> request = new Request<>(
-        "expresslistcontracts",
-        emptyList(),
-        neow3jService,
-        NeoGetNativeContracts.class);
-
-    NeoGetNativeContracts response;
-
+  private List<ExpressContractState> getContractFromExpressRpc(PrivateChain chain) {
+    var neow3j = Neow3jExpress.build(new HttpService(chain.getSelectedItem().getUrl()));
+    List<ExpressContractState> contracts;
     try {
-      response = request.send();
+      contracts = neow3j.expressListContracts().send().getContracts();
     } catch (IOException e) {
       NeoNotifier.notifyError(project, e.getMessage());
       return emptyList();
     }
-
-    if (response.hasError()) {
-      NeoNotifier.notifyError(project, response.getError().getMessage());
-      return emptyList();
-    }
-
-    return response.getNativeContracts();
+    return contracts;
   }
 }
